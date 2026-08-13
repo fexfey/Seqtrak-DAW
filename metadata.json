@@ -1,0 +1,6 @@
+{
+  "name": "Seqtrak DAW",
+  "description": "Yamaha Seqtrak inspired web DAW and groovebox with step sequencer, FM/AWM2 synths, drum machine, sampler, sound design FX, and AI pattern generator.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

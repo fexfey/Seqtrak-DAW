@@ -1,0 +1,1902 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Seqtrak Studio Pro - Group Mix Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            /* ДВУХЦВЕТНЫЙ ФОН: 70% серый, 30% оранжевый */
+            background: linear-gradient(to right, #aab0b5 73%, #f36822 73%); 
+            color: #1e293b; 
+            margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; user-select: none; 
+        }
+        
+        .jp-lg { font-family: 'Noto Sans JP', sans-serif; font-size: 1.15rem; font-weight: 900; letter-spacing: 1px; display: block; color: #1e293b;}
+        .en-sm { font-family: 'Inter', sans-serif; font-size: 0.55rem; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase; display: block; margin-top: 2px;}
+
+        /* --- ВЕРХНЯЯ ПАНЕЛЬ --- */
+        .top-bar {
+            background: #ffffff; padding: 10px 25px; display: flex; align-items: center; gap: 15px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 100; flex-shrink: 0;
+        }
+        .app-title { margin: 0; margin-right: 20px; display: flex; flex-direction: column; text-align: left; }
+        .app-title .jp-lg { color: #f36822; font-size: 1.5rem; letter-spacing: 2px;}
+
+        button { 
+            padding: 6px 16px; border: none; border-radius: 6px; cursor: pointer; transition: 0.15s; 
+            display: flex; flex-direction: column; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); background: #f8fafc; border: 1px solid #cbd5e1;
+        }
+        button:hover { background: #e2e8f0; }
+        button:active { transform: translateY(2px); box-shadow: none; }
+        button .jp-lg { font-size: 0.95rem; }
+
+        #btnPlayStop { background: #10b981; border-color: #059669; min-width: 90px;}
+        #btnPlayStop .jp-lg { color: white; }
+        #btnPlayStop .en-sm { color: rgba(255,255,255,0.8); }
+        
+        #btnRecord { background: #8b5cf6; border-color: #7c3aed;}
+        #btnRecord .jp-lg { color: white; }
+        #btnRecord .en-sm { color: rgba(255,255,255,0.8); }
+        #btnRecord.active { background: #ef4444; border-color: #dc2626; box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); animation: pulse 1s infinite;}
+        
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        
+        .control-group { display: flex; flex-direction: column; align-items: center; background: #f8fafc; padding: 4px 12px; border-radius: 6px; border: 1px solid #e2e8f0;}
+        .control-group input[type="number"] { width: 50px; font-weight: 900; font-size: 1.1rem; border: none; background: transparent; text-align: center; outline: none; color: #f36822; font-family: 'Inter'; padding: 0;}
+        
+        .toggle-group { display: flex; align-items: center; gap: 8px; cursor: pointer; background: #f8fafc; padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0; }
+        .toggle-group input { width: 16px; height: 16px; cursor: pointer; accent-color: #f36822;}
+        
+        .status-badge { background: #1e293b; padding: 6px 14px; border-radius: 6px; text-align: center; min-width: 100px; display: flex; flex-direction: column; align-items: center;}
+        .status-badge .jp-lg { font-size: 0.85rem; color: #10b981; }
+        .status-badge .en-sm { color: rgba(255,255,255,0.6); }
+
+        /* --- РАБОЧАЯ ЗОНА --- */
+        .workspace-wrapper { display: flex; flex: 1; justify-content: center; overflow: hidden; padding: 15px; }
+        .workspace-inner { display: flex; width: 100%; max-width: 1700px; gap: 15px; }
+
+        /* --- ЛЕВЫЙ САЙДБАР (ИНСПЕКТОР И ЛОГ) --- */
+        .left-sidebar { 
+            width: 240px; background: rgba(255,255,255,0.95); border: 1px solid #cbd5e1; border-radius: 8px; padding: 15px; 
+            display: flex; flex-direction: column; flex-shrink: 0; box-shadow: 0 8px 30px rgba(0,0,0,0.1); backdrop-filter: blur(10px);
+        }
+        .ins-content { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; min-height: 180px; display: flex; flex-direction: column; gap: 6px; }
+        .ins-empty { text-align: center; color: #94a3b8; margin-top: 60px; font-weight: bold; font-size: 0.7rem;}
+        
+        .ins-row { display: flex; justify-content: space-between; align-items: center;}
+        .ins-row .jp-lg { font-size: 0.8rem; color: #1e293b; margin: 0; text-align: right;}
+        .ins-lbl { color: #64748b; font-weight: 700; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px;}
+        
+        .log-container {
+            flex: 1; background: #0f172a; color: #94a3b8; border-radius: 6px; padding: 10px; font-family: monospace; 
+            font-size: 0.65rem; overflow-y: auto; border: 1px solid #000; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; gap: 4px; margin-top: 15px;
+        }
+        .log-entry { border-bottom: 1px solid #1e293b; padding-bottom: 4px; line-height: 1.3;}
+        .c-time { color: #f36822; margin-right: 5px;}
+
+        /* --- ЦЕНТРАЛЬНАЯ ЧАСТЬ (СЕКВЕНСОР) --- */
+        .center-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+        .track-tabs { display: flex; gap: 2px; flex-shrink: 0; }
+        .track-tab {
+            flex: 1; text-align: center; padding: 8px 0; background: rgba(255,255,255,0.7); color: #334155;
+            cursor: pointer; border-radius: 8px 8px 0 0; transition: 0.2s; border-bottom: 4px solid transparent; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+        .track-tab:hover { background: #fff; }
+        .track-tab.selected { background: #fed7aa; } 
+        .track-tab.selected .jp-lg { color: #d03801; }
+        .track-tab.active { background: var(--track-color); box-shadow: 0 -4px 10px rgba(0,0,0,0.15); border-bottom: none;} 
+        .track-tab.active .jp-lg, .track-tab.active .en-sm { color: #fff; }
+        .track-tab .jp-lg { font-size: 0.8rem; }
+
+        /* PIANO ROLL */
+        .piano-roll-viewport { 
+            flex: 1; display: flex; background: #ffffff; border: 1px solid #cbd5e1;
+            border-radius: 0 0 8px 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); overflow: hidden; position: relative; min-height: 0; 
+        }
+        
+        .keyboard { display: flex; flex-direction: column; width: 75px; border-right: 2px solid #1e293b; background: #f8fafc; z-index: 20; overflow: hidden; flex-shrink: 0;}
+        .key { height: 40px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; flex-shrink: 0; transition: 0.1s;}
+        .key.white { background: #ffffff; }
+        .key.black { background: #334155; }
+        .key span.en-sm { color: #94a3b8; font-size: 0.65rem; margin-top: 0;}
+        .key.black span.en-sm { color: #cbd5e1;}
+        .key.playing { background: var(--track-color) !important; }
+        .key.playing span.en-sm { color: #fff; font-weight: 900;}
+
+        .scroll-window { flex: 1; overflow: auto; position: relative; background: #ffffff; outline: none; min-height: 0; }
+        .timeline-container { position: absolute; top: 0; left: 0; height: 2880px; background: #ffffff; overflow: hidden; }
+        
+        .bg-grid { position: absolute; width: 100%; height: 100%; pointer-events: none; }
+        .bg-row { height: 40px; border-bottom: 1px solid #f1f5f9; box-sizing: border-box; width: 100%;}
+        .bg-row.black-key-row { background: rgba(0,0,0,0.02); } 
+
+        .bg-beat-lines { position: absolute; top:0; left:0; width: 100%; height: 100%; display: flex; pointer-events: none;}
+        .beat-line { width: 10px; height: 100%; box-sizing: border-box; border-right: 1px solid #f8fafc; flex-shrink: 0;} 
+        .beat-line.beat-main { border-right: 1px solid #e2e8f0; background: rgba(0,0,0,0.01);} 
+        .beat-line.page-end { border-right: 2px solid #94a3b8; } 
+
+        .notes-layer { position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: 10; }
+        
+        /* NOTE CLIPS */
+        .piano-note {
+            position: absolute; height: 38px; border-radius: 4px; cursor: move; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background: var(--note-color); transition: filter 0.1s, box-shadow 0.1s; z-index: 12; display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(0,0,0,0.15);
+        }
+        .piano-note:hover { filter: brightness(1.1); }
+        .piano-note.selected-note { outline: 2px solid #1e293b; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 15 !important;}
+        .piano-note.p-lock-waiting { outline: 3px solid #f36822; box-shadow: 0 0 15px #f36822; filter: brightness(1.2); z-index: 20 !important;}
+        .piano-note.ghost { opacity: 0.3; filter: grayscale(50%); pointer-events: none; z-index: 5; border-color: transparent;}
+        
+        .note-header { flex: 1; display: flex; align-items: center; padding-left: 6px; pointer-events: none; overflow: hidden;}
+        .note-header .en-sm { color: #fff; font-size: 0.55rem; opacity: 0.9; white-space: nowrap; text-overflow: ellipsis; margin:0;}
+        
+        .velocity-fill { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(255,255,255,0.4); pointer-events: none; border-top: 1px solid rgba(255,255,255,0.6);}
+        .resize-handle { position: absolute; right: 0; top: 0; width: 8px; height: 100%; cursor: ew-resize; background: rgba(255,255,255,0.2); border-left: 1px solid rgba(255,255,255,0.3);}
+        
+        #playhead { position: absolute; top: 0; left: 0; width: 2px; height: 100%; background: #f36822; box-shadow: 0 0 8px #f36822; z-index: 100; pointer-events: none; }
+        #selectionBox { position: absolute; background: rgba(14, 165, 233, 0.15); border: 1px solid #0ea5e9; z-index: 200; pointer-events: none; display: none; }
+
+        /* --- ПРАВЫЙ САЙДБАР (МИКШЕР С РУЧКАМИ И ГРУППОВЫМ РЕДАКТИРОВАНИЕМ) --- */
+        .right-sidebar { 
+            width: 340px; background: rgba(255,255,255,0.95); border: 1px solid #cbd5e1; border-radius: 8px; padding: 15px; 
+            display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; box-shadow: 0 8px 30px rgba(0,0,0,0.1); backdrop-filter: blur(10px);
+        }
+        .sidebar-title { margin: 0 0 15px 0; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; text-align: center; display: flex; flex-direction: column; align-items: center;}
+        
+        .dashboard { display: flex; flex-direction: column; gap: 8px; }
+        
+        /* Панель канала: Flex-контейнер для информации слева и ручки справа */
+        .dash-panel { 
+            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; 
+            border-left: 6px solid var(--track-color); position: relative; cursor: pointer; transition: 0.15s;
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+        }
+        .dash-panel:hover { background: #f1f5f9; }
+        .dash-panel.active { background: #ffffff; box-shadow: 0 0 0 2px var(--track-color), 0 4px 12px rgba(0,0,0,0.06); border-color: transparent; }
+        
+        .dash-info { flex: 1; overflow: hidden; display: flex; flex-direction: column; gap: 6px;}
+        .dash-header { display: flex; justify-content: space-between; align-items: flex-start;}
+        .dash-title-box { display: flex; flex-direction: column;}
+        .dash-title-box .jp-lg { font-size: 0.85rem;}
+        
+        .dash-sound { background: #1e293b; color: #10b981; padding: 4px 8px; border-radius: 4px; font-family: 'Inter', monospace; font-size: 0.65rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; letter-spacing: 0.5px;}
+        
+        .ms-controls { display: flex; gap: 4px;}
+        .btn-ms { width: 28px; height: 28px; border: 1px solid #cbd5e1; background: #f1f5f9; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: 0.1s;}
+        .btn-ms:hover { background: #e2e8f0; }
+        .btn-ms.mute.active { background: #ef4444; border-color: #ef4444; }
+        .btn-ms.solo.active { background: #f59e0b; border-color: #f59e0b; }
+        .btn-ms.active .en-sm { color: #fff;}
+
+        /* РУЧКА ГРОМКОСТИ (KNOB) */
+        .knob-container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 45px;}
+        .knob {
+            width: 36px; height: 36px; border-radius: 50%; background: #1e293b; 
+            border: 2px solid #cbd5e1; position: relative; cursor: ns-resize;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15); transition: border-color 0.1s;
+        }
+        .knob:hover { border-color: #f36822; }
+        .knob-ptr {
+            position: absolute; width: 4px; height: 14px; background: #f36822;
+            top: 2px; left: 14px; transform-origin: 2px 16px; border-radius: 2px; pointer-events: none;
+            transition: transform 0.1s ease-out;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <h1 class="app-title">
+            <span class="jp-lg">シークトラック</span>
+            <span class="en-sm">SEQTRAK STUDIO PRO</span>
+        </h1>
+        
+        <button id="btnPlayStop">
+            <span class="jp-lg">再生</span><span class="en-sm">PLAY / STOP</span>
+        </button>
+
+        <div class="control-group">
+            <span class="en-sm">TEMPO</span><input type="number" id="bpmInput" value="120" min="40" max="240">
+        </div>
+        <div class="control-group" title="Track Length">
+            <span class="en-sm">STEPS</span><input type="number" id="trackStepsInput" value="16" min="1" max="128">
+        </div>
+
+        <label class="toggle-group" title="Snap to grid (1/16)">
+            <input type="checkbox" id="snapToggle" checked>
+            <div><span class="jp-lg" style="font-size:0.9rem; margin-bottom:2px;">スナップ</span><span class="en-sm">SNAP TO GRID</span></div>
+        </label>
+        
+        <div class="status-badge" id="pageIndicator">
+            <span class="jp-lg">ページ 1</span><span class="en-sm">PAGE 1 / 1</span>
+        </div>
+        
+        <button id="btnRecord">
+            <span class="jp-lg">録音</span><span class="en-sm">RECORD</span>
+        </button>
+        <div class="status-badge" style="background: transparent; color: #475569; border: 1px solid #cbd5e1;">
+            <span class="jp-lg" id="recStatusJp" style="color: #64748b;">待機中</span><span class="en-sm" id="recStatusEn">READY</span>
+        </div>
+        
+        <button id="btnClear">
+            <span class="jp-lg">削除</span><span class="en-sm">CLEAR</span>
+        </button>
+        <button id="btnSave">
+            <span class="jp-lg">保存</span><span class="en-sm">SAVE PROJECT</span>
+        </button>
+        <button id="btnLoad">
+            <span class="jp-lg">読込</span><span class="en-sm">LOAD PROJECT</span>
+        </button>
+        <input type="file" id="fileInput" accept=".json" style="display: none;">
+    </div>
+
+    <div class="workspace-wrapper">
+        <div class="workspace-inner">
+            
+            <!-- ЛЕВЫЙ САЙДБАР -->
+            <div class="left-sidebar">
+                <h2 class="sidebar-title">
+                    <span class="jp-lg">プロパティ</span><span class="en-sm">INSPECTOR</span>
+                </h2>
+                <div id="insContent" class="ins-content">
+                    <div class="ins-empty"><span class="en-sm">SELECT OR HOVER NOTE</span></div>
+                </div>
+
+                <h2 class="sidebar-title" style="margin-top: 25px;">
+                    <span class="jp-lg">システムログ</span><span class="en-sm">SYSTEM LOG</span>
+                </h2>
+                <div id="log" class="log-container">
+                    <div class="log-entry"><span class="c-time">[SYS]</span> <span class="en-sm" style="color:#10b981;">Engine Initialized</span></div>
+                </div>
+            </div>
+
+            <!-- ЦЕНТР -->
+            <div class="center-panel">
+                <div class="track-tabs" id="trackTabs"></div>
+                
+                <div class="piano-roll-viewport" id="prViewport">
+                    <div class="keyboard" id="keyboard"></div>
+                    <div class="scroll-window" id="scrollWindow" tabindex="0">
+                        <div class="timeline-container" id="timeline">
+                            <div class="bg-grid" id="bgRows"></div>
+                            <div class="bg-beat-lines" id="bgBeats"></div>
+                            <div class="notes-layer" id="notesLayer"></div>
+                            <div id="selectionBox"></div>
+                            <div id="playhead"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ПРАВЫЙ САЙДБАР (МИКШЕР) -->
+            <div class="right-sidebar">
+                <h2 class="sidebar-title">
+                    <span class="jp-lg">ミキサー</span><span class="en-sm">MIXER CONSOLE</span>
+                </h2>
+                <div class="dashboard" id="dashboard"></div>
+            </div>
+            
+        </div>
+    </div>
+<script>
+        // === 1. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ===
+        const PIXELS_PER_BEAT = 40; 
+        const ROW_HEIGHT = 40; 
+        const TOTAL_BEATS = 128;
+        
+        let currentLoopPage = 1;
+        let lastCreatedNoteDuration = 1.0; 
+        let currentTrackId = 0; 
+        let selectedTrackIds = new Set([0]); 
+        let midiOutput = null;
+
+        let trackLengths = Array(11).fill(16);
+        let trackBanks = Array(11).fill().map(() => ({ msb: 63, lsb: 0, pc: -1 }));
+        let trackStates = Array(11).fill().map(() => ({ mute: false, solo: false, volume: 100 }));
+        let projectNotes = Array(11).fill().map(() => []); 
+
+        let isPlaying = false, playStartTime = 0, lastClockBeat = -1;
+        let lastTrackBeats = Array(11).fill(-1); 
+        let activeMidiNotes = new Set(); 
+        let dawTriggeredNotes = {}; 
+
+        let isRecording = false, activeRecNotes = {}; 
+
+        let selectedNoteIds = new Set();
+        let clipboard = [];
+        let isSelecting = false, selectStartX = 0, selectStartY = 0, dragState = null; 
+        let lockedNoteForPLock = null; 
+        let activeKnob = null; // Для drag'н'drop ручек громкости
+
+        // ЦВЕТА КАНАЛОВ
+        const trackColors = [
+            '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981', 
+            '#06b6d4', '#0ea5e9', '#3b82f6', 
+            '#8b5cf6' 
+        ];
+
+        const tracks = [
+            { id: 0, name: 'KICK', jp: 'キック', type: 'drum' }, { id: 1, name: 'SNARE', jp: 'スネア', type: 'drum' }, 
+            { id: 2, name: 'CLAP', jp: 'クラップ', type: 'drum' }, { id: 3, name: 'HAT 1', jp: 'ハット 1', type: 'drum' }, 
+            { id: 4, name: 'HAT 2', jp: 'ハット 2', type: 'drum' }, { id: 5, name: 'PERC 1', jp: 'パーカッション 1', type: 'drum' },
+            { id: 6, name: 'PERC 2', jp: 'パーカッション 2', type: 'drum' }, { id: 7, name: 'SYNTH 1', jp: 'シンセ 1', type: 'synth' }, 
+            { id: 8, name: 'SYNTH 2', jp: 'シンセ 2', type: 'synth' }, { id: 9, name: 'DX', jp: 'DX シンセ', type: 'synth' }, 
+            { id: 10, name: 'SAMPLER', jp: 'サンプラー', type: 'sampler' }
+        ];
+
+        const notesList = [];
+        const noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+        for (let midi = 95; midi >= 24; midi--) {
+            let nName = noteNames[midi % 12];
+            notesList.push({ note: nName + (Math.floor(midi / 12) - 1), midiNum: midi, black: nName.includes('#') });
+        }
+
+        // БАЗА ЗВУКОВ
+        const drumNames = ["Tight Punchy Kick","Soft Kick","Fat Kick","Distorted Kick","Saturated Kick","Rumble Kick","Lo-Fi Kick","RX7 Kick","Acoustic Kick","Tight Snare","Pitched Snare","Fat Snare","Click Snare","Lo-Fi Snare","Acoustic Snare","Glitch Snare","Wood Snare","Acoustic Rim","Analog Rim","Lo-Fi Rim","Hand Clap","Group Clap","RX11 Clap","Lo-Fi Clap","Noise Clap","Glitch Clap","Finger Snap","Tight Closed Hat","Acoustic Hat","Noise Hat","Lo-Fi Hat","Bright Open Hat","Noise Open Hat","Crash Open Hat","Shaker","Tambourine","Sharp Ride","Acoustic Ride","Crash Ride","Splash Cymbal","Acoustic High Tom","Acoustic Mid Tom","Acoustic Low Tom","Electronic Tom","Analog Cowbell","Agogo","Small Bell","Conga","Bongo","Djembe","Talking Drum","Tabla","Timbale","Cajon"];
+        const synthNames = ["Rn Bass","Buzz Bass","Acid3","Bass Morpher","Brain Bass","Dark Bass","Fat Sine","Moon Bass","Chill Out Bass","Growler","Smacked","Noise Bass","Big Bass","Rave Blade","Plastic Bass","Wah Bass","Pulse Step","Sync Bass","Puncher","Trance Bass","Oh Bee Bass","Analog Bass","Upright","Slap Switch","House Organ Bass","Multi Saw DA","Dance Synth DA","Power Hook","Saw Lead","Cool Trance","Ana Dayz","Progressive Attack","Rezz Punch","Hard FM Keyboard","Trance Attack","Tekno Attack","Detroit Stab","Noiz Rezz","Queens","Power Dance Chords","Hyper Trance","Space Lead","Vintage Sync","Dirty Hook","PWM Lead","Big Drone","Supertrance","Full Concert Grand","Rock Grand Piano","House Piano","CP80","Ballad Key","Vintage 74","Neo Soul","Dyno Straight","Vintage Case","DX Legend","DX Woody","DX-7","Hybrid EP","Analog Piano","Super Clavi","Vintage Clavi","Wah Clavi","Harpsichord","Rock Organ","Draw Organ","Church Organ","Accordion","Saw Pad","Ambient Pad","Trance","Warm Pad","Mother Ship","Landing Pad","Pure Synth","Pure Synth Delay","Bell Pad","Sci-Fi","Halo Pad","Space Vocals","Choir Pad","Lunar Eclipse","Mysterious Invention","Orchestra Hit","Rain Pad","Goblin","Violin Solo","Cello Solo","Large Section","Tremolo Strings","Disco","Synth Strings","Superstrings","Beauty Harp","Classical Trumpet","French Horn","Orchestra Brass","Sforzando","Big Band","Hybrid Brass","The Synth Brass","Soprano Sax","Alto Sax","Tenor Sax","Piccolo","Sweet Flute","Oboe","Clarinet","Harmonica","Nylon Slide","Classical12Str","Hip-Hop Guitar","Clean El & Ac","Dual Coil Amp","Overdrive","Hard Drive","Sitar","Banjo","Koto","Kalimba","Marimba","Vibraphone","Glocken","Steel Drum","Tubular Bells"];
+        
+        function getSoundCategoryName(msb, lsb, pc) {
+            if (pc < 0) return "WAITING..."; 
+            let cat = "PRESET";
+            if (msb === 63) {
+                if (pc < 112) cat = "KICK"; else if (pc < 296) cat = "SNARE/CLAP"; 
+                else if (pc < 497) cat = "HAT/SHAKER"; else if (pc < 650) cat = "CYMBAL/TOM";
+                else if (pc < 1102) cat = "BASS/LEAD"; else if (pc < 1516) cat = "PAD/STRINGS";
+                else if (pc < 1891) cat = "ACOUSTIC"; else cat = "FM SYNTH";
+            } else if (msb === 62) cat = "SAMPLE";
+            return `${cat} #${pc + 1} (B${msb}/${lsb})`;
+        }
+
+        // === 3. ПОЛУЧЕНИЕ ЭЛЕМЕНТОВ DOM ===
+        const scrollWindow = document.getElementById('scrollWindow');
+        const keyboard = document.getElementById('keyboard');
+        const bpmInput = document.getElementById('bpmInput');
+        const trackStepsInput = document.getElementById('trackStepsInput');
+        const snapToggle = document.getElementById('snapToggle');
+        const dashboard = document.getElementById('dashboard');
+        const trackTabsContainer = document.getElementById('trackTabs');
+        const notesLayer = document.getElementById('notesLayer');
+        const timeline = document.getElementById('timeline');
+        const bgRows = document.getElementById('bgRows');
+        const bgBeats = document.getElementById('bgBeats');
+        const insContent = document.getElementById('insContent');
+        const logDiv = document.getElementById('log');
+
+        scrollWindow.addEventListener('scroll', () => { keyboard.scrollTop = scrollWindow.scrollTop; });
+
+        function applySnap(val) {
+            if (!snapToggle.checked) return val;
+            return Math.round(val * 4) / 4; 
+        }
+
+        function setTrackColor(element, trackId) {
+            element.style.setProperty('--track-color', trackColors[trackId]);
+            element.style.setProperty('--note-color', trackColors[trackId]);
+        }
+
+        // --- УПРАВЛЕНИЕ МИКШЕРОМ ---
+        function updateKnobVisual(tIndex) {
+            let knobPtr = document.getElementById(`knob-ptr-${tIndex}`);
+            if (knobPtr) {
+                let vol = trackStates[tIndex].volume;
+                let deg = -135 + (vol / 127) * 270; // Map 0-127 to -135deg...+135deg
+                knobPtr.style.transform = `rotate(${deg}deg)`;
+            }
+        }
+
+        function updateDashboardPanel(tIndex) {
+            const bState = trackBanks[tIndex]; const msState = trackStates[tIndex];
+            const nameEl = document.getElementById(`dash-name-${tIndex}`);
+            if (nameEl) nameEl.textContent = getSoundCategoryName(bState.msb, bState.lsb, bState.pc);
+            
+            const btnMute = document.getElementById(`btn-mute-${tIndex}`);
+            const btnSolo = document.getElementById(`btn-solo-${tIndex}`);
+            if (btnMute) btnMute.className = `btn-ms mute ${msState.mute ? 'active' : ''}`;
+            if (btnSolo) btnSolo.className = `btn-ms solo ${msState.solo ? 'active' : ''}`;
+
+            updateKnobVisual(tIndex);
+
+            const panel = document.getElementById(`dash-panel-${tIndex}`);
+            if(panel) {
+                panel.className = `dash-panel ${selectedTrackIds.has(tIndex) ? (currentTrackId === tIndex ? 'primary active' : 'active') : ''}`;
+                setTrackColor(panel, tIndex);
+            }
+        }
+
+        // ГРУППОВАЯ ГРОМКОСТЬ (Мышь)
+        function startKnobDrag(e, tIndex) {
+            e.stopPropagation();
+            activeKnob = { id: tIndex, startY: e.clientY, startVol: trackStates[tIndex].volume };
+            window.addEventListener('mousemove', onKnobDrag);
+            window.addEventListener('mouseup', onKnobRelease);
+        }
+        function onKnobDrag(e) {
+            if(!activeKnob) return;
+            let deltaY = activeKnob.startY - e.clientY; // Вверх - плюс
+            let newVol = Math.max(0, Math.min(127, activeKnob.startVol + deltaY));
+            
+            // Если крутим ручку на выделенном треке - применяем ко всем выделенным
+            if (selectedTrackIds.has(activeKnob.id)) {
+                selectedTrackIds.forEach(id => {
+                    handleVolumeChangeUI(id, newVol);
+                });
+            } else {
+                handleVolumeChangeUI(activeKnob.id, newVol);
+            }
+        }
+        function onKnobRelease() {
+            activeKnob = null;
+            window.removeEventListener('mousemove', onKnobDrag);
+            window.removeEventListener('mouseup', onKnobRelease);
+        }
+
+        function handleVolumeChangeUI(tIndex, val) {
+            trackStates[tIndex].volume = val;
+            updateKnobVisual(tIndex);
+            if (midiOutput) midiOutput.send([0xB0 + tIndex, 7, val]); 
+        }
+
+        // ГРУППОВОЙ MUTE
+        function toggleMuteUI(tIndex) {
+            let newState = !trackStates[tIndex].mute;
+            if (selectedTrackIds.has(tIndex)) {
+                selectedTrackIds.forEach(id => {
+                    trackStates[id].mute = newState;
+                    if (midiOutput) midiOutput.send([0xB0 + id, 23, newState ? 127 : 0]);
+                    updateDashboardPanel(id);
+                });
+            } else {
+                trackStates[tIndex].mute = newState;
+                if (midiOutput) midiOutput.send([0xB0 + tIndex, 23, newState ? 127 : 0]);
+                updateDashboardPanel(tIndex);
+            }
+        }
+
+        // ГРУППОВОЕ SOLO
+        function toggleSoloUI(tIndex) {
+            let isTurningOn = !trackStates[tIndex].solo;
+            
+            // Выключаем остальные солирующие треки (Эксклюзивное соло)
+            if (isTurningOn) {
+                for(let i=0; i<11; i++) {
+                    if (i !== tIndex && !selectedTrackIds.has(i) && trackStates[i].solo) {
+                        trackStates[i].solo = false;
+                        if (midiOutput) midiOutput.send([0xB0 + i, 24, 0]); 
+                        updateDashboardPanel(i);
+                    }
+                }
+            }
+
+            if (selectedTrackIds.has(tIndex)) {
+                selectedTrackIds.forEach(id => {
+                    trackStates[id].solo = isTurningOn;
+                    if (midiOutput) midiOutput.send([0xB0 + id, 24, isTurningOn ? 127 : 0]);
+                    updateDashboardPanel(id);
+                });
+            } else {
+                trackStates[tIndex].solo = isTurningOn;
+                if (midiOutput) midiOutput.send([0xB0 + tIndex, 24, isTurningOn ? 127 : 0]);
+                updateDashboardPanel(tIndex);
+            }
+        }
+
+        function switchTrack(trackId, e) {
+            if (e && (e.ctrlKey || e.metaKey)) {
+                if (selectedTrackIds.has(trackId)) {
+                    if (selectedTrackIds.size > 1) { selectedTrackIds.delete(trackId); currentTrackId = Array.from(selectedTrackIds).pop(); }
+                } else { selectedTrackIds.add(trackId); currentTrackId = trackId; }
+            } else {
+                selectedTrackIds.clear(); selectedTrackIds.add(trackId); currentTrackId = trackId;
+            }
+            
+            document.querySelectorAll('.track-tab').forEach((tab, i) => {
+                tab.className = `track-tab ${selectedTrackIds.has(i) ? (currentTrackId === i ? 'active' : 'selected') : ''}`;
+            });
+            for(let i=0; i<11; i++) updateDashboardPanel(i);
+            selectedNoteIds.clear();
+            
+            rebuildGridLines(); renderNotes();
+
+            // SysEx для железного переключения канала
+            if (midiOutput && e !== null) { 
+                midiOutput.send([0xF0, 0x43, 0x20, 0x7F, 0x1C, 0x03, 0x00, 0x00, 0x00, currentTrackId, 0xF7]); 
+            }
+        }
+
+        function updatePageUI(currentBeat) {
+            let len = trackLengths[currentTrackId] || 16;
+            let totalPages = Math.ceil(len / 16);
+            let page = Math.floor(currentBeat / 16) + 1;
+            if (page > totalPages) page = totalPages; if (page < 1) page = 1;
+            
+            const pInd = document.getElementById('pageIndicator');
+            pInd.innerHTML = `<span class="jp-lg">ページ ${page} / ${totalPages}</span><span class="en-sm">PAGE ${page} / ${totalPages}</span>`;
+            
+            if (isPlaying && currentLoopPage !== page) {
+                currentLoopPage = page;
+                scrollWindow.scrollLeft = (page - 1) * 16 * PIXELS_PER_BEAT;
+            }
+        }
+
+        function rebuildGridLines() {
+            let len = trackLengths[currentTrackId];
+            timeline.style.width = (len * PIXELS_PER_BEAT) + 'px';
+            bgBeats.innerHTML = '';
+            for(let i=0; i<len*4; i++) { 
+                const bLine = document.createElement('div');
+                bLine.className = 'beat-line';
+                if (i % 4 === 0) bLine.classList.add('beat-main');
+                if (i % 64 === 63) bLine.classList.add('page-end');
+                bgBeats.appendChild(bLine);
+            }
+            updatePageUI(scrollWindow.scrollLeft / PIXELS_PER_BEAT);
+        }
+
+        function showInspector(noteObj, tIndex) {
+            const nName = notesList.find(n => n.midiNum === noteObj.pitchMidi)?.note || noteObj.pitchMidi;
+            const tName = tracks[tIndex].name;
+            const inst = (noteObj.pc >= 0) ? getSoundCategoryName(noteObj.msb, noteObj.lsb, noteObj.pc) : getSoundCategoryName(trackBanks[tIndex].msb, trackBanks[tIndex].lsb, trackBanks[tIndex].pc);
+            
+            insContent.innerHTML = `
+                <div class="ins-row"><span class="ins-lbl">TRACK:</span> <span class="jp-lg" style="color:${trackColors[tIndex]}">${tName}</span></div>
+                <div class="ins-row"><span class="ins-lbl">NOTE:</span> <span class="jp-lg">${nName}</span></div>
+                <div class="ins-row"><span class="ins-lbl">VELOCITY:</span> <span class="jp-lg">${noteObj.velocity || 100}</span></div>
+                <div class="ins-row"><span class="ins-lbl">POSITION:</span> <span class="jp-lg" style="font-size:0.8rem">${noteObj.startBeat.toFixed(2)}</span></div>
+                <div class="ins-row"><span class="ins-lbl">LENGTH:</span> <span class="jp-lg" style="font-size:0.8rem">${noteObj.durationBeat.toFixed(2)}</span></div>
+                <div class="ins-row" style="margin-top:4px; padding-top:6px; border-top:1px dashed #cbd5e1;"><span class="ins-lbl" style="color:#f97316;">P-LOCK INST:</span></div>
+                <div class="ins-row" style="font-size:0.75rem; color:#f97316; font-weight:bold; white-space:nowrap; overflow:hidden;">${inst}</div>
+            `;
+        }
+
+        function hideInspector() {
+            insContent.innerHTML = `<div class="ins-empty"><span class="en-sm">SELECT OR HOVER NOTE</span></div>`;
+        }
+
+        function initUI() {
+            tracks.forEach(t => {
+                const p = document.createElement('div'); p.id = `dash-panel-${t.id}`;
+                p.className = `dash-panel ${selectedTrackIds.has(t.id) ? 'primary active' : ''}`;
+                setTrackColor(p, t.id);
+                p.onclick = (e) => { if(!e.target.closest('.ms-controls') && !e.target.closest('.knob-container')) switchTrack(t.id, e); };
+                
+                p.innerHTML = `
+                    <div class="dash-info">
+                        <div class="dash-header">
+                            <div class="dash-title-box"><span class="jp-lg">${t.jp}</span><span class="en-sm">CH ${t.ch} | ${t.name}</span></div>
+                        </div>
+                        <div class="dash-sound" id="dash-name-${t.id}">...</div>
+                        <div class="ms-controls">
+                            <button class="btn-ms mute" id="btn-mute-${t.id}" onclick="event.stopPropagation(); toggleMuteUI(${t.id})"><span class="en-sm">M</span></button>
+                            <button class="btn-ms solo" id="btn-solo-${t.id}" onclick="event.stopPropagation(); toggleSoloUI(${t.id})"><span class="en-sm">S</span></button>
+                        </div>
+                    </div>
+                    <div class="knob-container">
+                        <span class="en-sm" style="margin-bottom:4px;">VOL</span>
+                        <div class="knob" onmousedown="startKnobDrag(event, ${t.id})">
+                            <div class="knob-ptr" id="knob-ptr-${t.id}"></div>
+                        </div>
+                    </div>
+                `;
+                dashboard.appendChild(p); updateDashboardPanel(t.id); 
+                
+                const tab = document.createElement('div');
+                tab.className = `track-tab ${selectedTrackIds.has(t.id) ? 'active' : ''}`;
+                setTrackColor(tab, t.id);
+                tab.innerHTML = `<span class="jp-lg">${t.jp}</span><span class="en-sm">${t.name}</span>`;
+                tab.onclick = (e) => switchTrack(t.id, e);
+                trackTabsContainer.appendChild(tab);
+            });
+
+            notesList.forEach(n => {
+                const key = document.createElement('div');
+                key.id = `key-${n.midiNum}`;
+                key.className = `key ${n.black ? 'black' : 'white'}`;
+                if (!n.black && (n.note.startsWith('C') || n.note.startsWith('F'))) {
+                    key.innerHTML = `<span class="en-sm">${n.note}</span>`;
+                } else { key.innerHTML = `<span class="en-sm"></span>`; }
+                keyboard.appendChild(key);
+
+                const row = document.createElement('div');
+                row.className = `bg-row ${n.black ? 'black-key-row' : ''}`;
+                bgRows.appendChild(row);
+            });
+
+            rebuildGridLines();
+            setTimeout(() => { scrollWindow.scrollTop = 1350; }, 100);
+        }
+
+        // --- РЕДАКТИРОВАНИЕ НОТ ---
+        function drawSingleNote(noteObj, t, isCurrentTrack, offsetBeat) {
+            const rowIndex = notesList.findIndex(n => n.midiNum === noteObj.pitchMidi);
+            if (rowIndex < 0) return;
+
+            const noteDiv = document.createElement('div');
+            noteDiv.className = `piano-note`;
+            if (!isCurrentTrack) noteDiv.classList.add('ghost');
+            if (selectedNoteIds.has(noteObj.id)) noteDiv.classList.add('selected-note');
+            if (lockedNoteForPLock && lockedNoteForPLock.id === noteObj.id) noteDiv.classList.add('p-lock-waiting');
+            
+            setTrackColor(noteDiv, t);
+            noteDiv.style.top = (rowIndex * ROW_HEIGHT + 1) + 'px';
+            noteDiv.style.left = ((noteObj.startBeat + offsetBeat) * PIXELS_PER_BEAT) + 'px';
+            noteDiv.style.width = (noteObj.durationBeat * PIXELS_PER_BEAT - 1) + 'px';
+
+            let vel = noteObj.velocity !== undefined ? noteObj.velocity : 100;
+            let pcText = (noteObj.pc >= 0) ? getSoundCategoryName(noteObj.msb, noteObj.lsb, noteObj.pc).split(' ')[0] : '';
+            
+            noteDiv.innerHTML = `
+                <div class="note-header"><span class="en-sm">${pcText}</span></div>
+                <div class="velocity-fill" style="height: ${(vel/127)*100}%"></div>
+            `;
+
+            noteDiv.addEventListener('mouseenter', () => showInspector(noteObj, t));
+            noteDiv.addEventListener('mouseleave', () => {
+                if(selectedNoteIds.size > 0) {
+                    let firstId = Array.from(selectedNoteIds)[0];
+                    let found = null;
+                    for(let i=0; i<11; i++){ let n = projectNotes[i].find(x=>x.id===firstId); if(n){found={note:n, track:i}; break;} }
+                    if(found) showInspector(found.note, found.track); else hideInspector();
+                } else hideInspector();
+            });
+
+            if (isCurrentTrack && offsetBeat === 0) {
+                const resizer = document.createElement('div');
+                resizer.className = 'resize-handle';
+                noteDiv.appendChild(resizer);
+
+                noteDiv.addEventListener('mousedown', (e) => {
+                    e.stopPropagation(); 
+                    
+                    if (e.shiftKey) { // VELOCITY DRAG
+                        e.preventDefault(); dragState = { type: 'velocity', note: noteObj, startY: e.clientY, startVel: vel }; return;
+                    }
+                    if (e.altKey) { // SPLIT NOTE
+                        const clickBeat = (e.clientX - timeline.getBoundingClientRect().left) / PIXELS_PER_BEAT;
+                        if (clickBeat > noteObj.startBeat + 0.1 && clickBeat < noteObj.startBeat + noteObj.durationBeat - 0.1) {
+                            let oldDur = noteObj.durationBeat; noteObj.durationBeat = clickBeat - noteObj.startBeat;
+                            projectNotes[t].push({ ...noteObj, id: Date.now() + Math.random(), startBeat: clickBeat, durationBeat: oldDur - noteObj.durationBeat });
+<script>
+        // === 1. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ===
+        const PIXELS_PER_BEAT = 40; 
+        const ROW_HEIGHT = 40; 
+        const TOTAL_BEATS = 128;
+        
+        let currentLoopPage = 1;
+        let lastCreatedNoteDuration = 1.0; 
+        let currentTrackId = 0; 
+        let selectedTrackIds = new Set([0]); 
+        let midiOutput = null;
+
+        let trackLengths = Array(11).fill(16);
+        let trackBanks = Array(11).fill().map(() => ({ msb: 63, lsb: 0, pc: -1 }));
+        let trackStates = Array(11).fill().map(() => ({ mute: false, solo: false, volume: 100 }));
+        let projectNotes = Array(11).fill().map(() => []); 
+
+        let isPlaying = false, playStartTime = 0, lastClockBeat = -1;
+        let lastTrackBeats = Array(11).fill(-1); 
+        let activeMidiNotes = new Set(); 
+        let dawTriggeredNotes = {}; 
+
+        let isRecording = false, activeRecNotes = {}; 
+
+        let selectedNoteIds = new Set();
+        let clipboard = [];
+        let isSelecting = false, selectStartX = 0, selectStartY = 0, dragState = null; 
+        let lockedNoteForPLock = null; 
+        let activeKnob = null; // Для drag'н'drop ручек громкости
+
+        // ЦВЕТА КАНАЛОВ
+        const trackColors = [
+            '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981', 
+            '#06b6d4', '#0ea5e9', '#3b82f6', 
+            '#8b5cf6' 
+        ];
+
+        const tracks = [
+            { id: 0, name: 'KICK', jp: 'キック', type: 'drum' }, { id: 1, name: 'SNARE', jp: 'スネア', type: 'drum' }, 
+            { id: 2, name: 'CLAP', jp: 'クラップ', type: 'drum' }, { id: 3, name: 'HAT 1', jp: 'ハット 1', type: 'drum' }, 
+            { id: 4, name: 'HAT 2', jp: 'ハット 2', type: 'drum' }, { id: 5, name: 'PERC 1', jp: 'パーカッション 1', type: 'drum' },
+            { id: 6, name: 'PERC 2', jp: 'パーカッション 2', type: 'drum' }, { id: 7, name: 'SYNTH 1', jp: 'シンセ 1', type: 'synth' }, 
+            { id: 8, name: 'SYNTH 2', jp: 'シンセ 2', type: 'synth' }, { id: 9, name: 'DX', jp: 'DX シンセ', type: 'synth' }, 
+            { id: 10, name: 'SAMPLER', jp: 'サンプラー', type: 'sampler' }
+        ];
+
+        const notesList = [];
+        const noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+        for (let midi = 95; midi >= 24; midi--) {
+            let nName = noteNames[midi % 12];
+            notesList.push({ note: nName + (Math.floor(midi / 12) - 1), midiNum: midi, black: nName.includes('#') });
+        }
+
+        // БАЗА ЗВУКОВ
+        const drumNames = ["Tight Punchy Kick","Soft Kick","Fat Kick","Distorted Kick","Saturated Kick","Rumble Kick","Lo-Fi Kick","RX7 Kick","Acoustic Kick","Tight Snare","Pitched Snare","Fat Snare","Click Snare","Lo-Fi Snare","Acoustic Snare","Glitch Snare","Wood Snare","Acoustic Rim","Analog Rim","Lo-Fi Rim","Hand Clap","Group Clap","RX11 Clap","Lo-Fi Clap","Noise Clap","Glitch Clap","Finger Snap","Tight Closed Hat","Acoustic Hat","Noise Hat","Lo-Fi Hat","Bright Open Hat","Noise Open Hat","Crash Open Hat","Shaker","Tambourine","Sharp Ride","Acoustic Ride","Crash Ride","Splash Cymbal","Acoustic High Tom","Acoustic Mid Tom","Acoustic Low Tom","Electronic Tom","Analog Cowbell","Agogo","Small Bell","Conga","Bongo","Djembe","Talking Drum","Tabla","Timbale","Cajon"];
+        const synthNames = ["Rn Bass","Buzz Bass","Acid3","Bass Morpher","Brain Bass","Dark Bass","Fat Sine","Moon Bass","Chill Out Bass","Growler","Smacked","Noise Bass","Big Bass","Rave Blade","Plastic Bass","Wah Bass","Pulse Step","Sync Bass","Puncher","Trance Bass","Oh Bee Bass","Analog Bass","Upright","Slap Switch","House Organ Bass","Multi Saw DA","Dance Synth DA","Power Hook","Saw Lead","Cool Trance","Ana Dayz","Progressive Attack","Rezz Punch","Hard FM Keyboard","Trance Attack","Tekno Attack","Detroit Stab","Noiz Rezz","Queens","Power Dance Chords","Hyper Trance","Space Lead","Vintage Sync","Dirty Hook","PWM Lead","Big Drone","Supertrance","Full Concert Grand","Rock Grand Piano","House Piano","CP80","Ballad Key","Vintage 74","Neo Soul","Dyno Straight","Vintage Case","DX Legend","DX Woody","DX-7","Hybrid EP","Analog Piano","Super Clavi","Vintage Clavi","Wah Clavi","Harpsichord","Rock Organ","Draw Organ","Church Organ","Accordion","Saw Pad","Ambient Pad","Trance","Warm Pad","Mother Ship","Landing Pad","Pure Synth","Pure Synth Delay","Bell Pad","Sci-Fi","Halo Pad","Space Vocals","Choir Pad","Lunar Eclipse","Mysterious Invention","Orchestra Hit","Rain Pad","Goblin","Violin Solo","Cello Solo","Large Section","Tremolo Strings","Disco","Synth Strings","Superstrings","Beauty Harp","Classical Trumpet","French Horn","Orchestra Brass","Sforzando","Big Band","Hybrid Brass","The Synth Brass","Soprano Sax","Alto Sax","Tenor Sax","Piccolo","Sweet Flute","Oboe","Clarinet","Harmonica","Nylon Slide","Classical12Str","Hip-Hop Guitar","Clean El & Ac","Dual Coil Amp","Overdrive","Hard Drive","Sitar","Banjo","Koto","Kalimba","Marimba","Vibraphone","Glocken","Steel Drum","Tubular Bells"];
+        
+        function getSoundCategoryName(msb, lsb, pc) {
+            if (pc < 0) return "WAITING..."; 
+            let cat = "PRESET";
+            if (msb === 63) {
+                if (pc < 112) cat = "KICK"; else if (pc < 296) cat = "SNARE/CLAP"; 
+                else if (pc < 497) cat = "HAT/SHAKER"; else if (pc < 650) cat = "CYMBAL/TOM";
+                else if (pc < 1102) cat = "BASS/LEAD"; else if (pc < 1516) cat = "PAD/STRINGS";
+                else if (pc < 1891) cat = "ACOUSTIC"; else cat = "FM SYNTH";
+            } else if (msb === 62) cat = "SAMPLE";
+            return `${cat} #${pc + 1} (B${msb}/${lsb})`;
+        }
+
+        // === 3. ПОЛУЧЕНИЕ ЭЛЕМЕНТОВ DOM ===
+        const scrollWindow = document.getElementById('scrollWindow');
+        const keyboard = document.getElementById('keyboard');
+        const bpmInput = document.getElementById('bpmInput');
+        const trackStepsInput = document.getElementById('trackStepsInput');
+        const snapToggle = document.getElementById('snapToggle');
+        const dashboard = document.getElementById('dashboard');
+        const trackTabsContainer = document.getElementById('trackTabs');
+        const notesLayer = document.getElementById('notesLayer');
+        const timeline = document.getElementById('timeline');
+        const bgRows = document.getElementById('bgRows');
+        const bgBeats = document.getElementById('bgBeats');
+        const insContent = document.getElementById('insContent');
+        const logDiv = document.getElementById('log');
+
+        scrollWindow.addEventListener('scroll', () => { keyboard.scrollTop = scrollWindow.scrollTop; });
+
+        function applySnap(val) {
+            if (!snapToggle.checked) return val;
+            return Math.round(val * 4) / 4; 
+        }
+
+        function setTrackColor(element, trackId) {
+            element.style.setProperty('--track-color', trackColors[trackId]);
+            element.style.setProperty('--note-color', trackColors[trackId]);
+        }
+
+        // --- УПРАВЛЕНИЕ МИКШЕРОМ ---
+        function updateKnobVisual(tIndex) {
+            let knobPtr = document.getElementById(`knob-ptr-${tIndex}`);
+            if (knobPtr) {
+                let vol = trackStates[tIndex].volume;
+                let deg = -135 + (vol / 127) * 270; // Map 0-127 to -135deg...+135deg
+                knobPtr.style.transform = `rotate(${deg}deg)`;
+            }
+        }
+
+        function updateDashboardPanel(tIndex) {
+            const bState = trackBanks[tIndex]; const msState = trackStates[tIndex];
+            const nameEl = document.getElementById(`dash-name-${tIndex}`);
+            if (nameEl) nameEl.textContent = getSoundCategoryName(bState.msb, bState.lsb, bState.pc);
+            
+            const btnMute = document.getElementById(`btn-mute-${tIndex}`);
+            const btnSolo = document.getElementById(`btn-solo-${tIndex}`);
+            if (btnMute) btnMute.className = `btn-ms mute ${msState.mute ? 'active' : ''}`;
+            if (btnSolo) btnSolo.className = `btn-ms solo ${msState.solo ? 'active' : ''}`;
+
+            updateKnobVisual(tIndex);
+
+            const panel = document.getElementById(`dash-panel-${tIndex}`);
+            if(panel) {
+                panel.className = `dash-panel ${selectedTrackIds.has(tIndex) ? (currentTrackId === tIndex ? 'primary active' : 'active') : ''}`;
+                setTrackColor(panel, tIndex);
+            }
+        }
+
+        // ГРУППОВАЯ ГРОМКОСТЬ (Мышь)
+        function startKnobDrag(e, tIndex) {
+            e.stopPropagation();
+            activeKnob = { id: tIndex, startY: e.clientY, startVol: trackStates[tIndex].volume };
+            window.addEventListener('mousemove', onKnobDrag);
+            window.addEventListener('mouseup', onKnobRelease);
+        }
+        function onKnobDrag(e) {
+            if(!activeKnob) return;
+            let deltaY = activeKnob.startY - e.clientY; // Вверх - плюс
+            let newVol = Math.max(0, Math.min(127, activeKnob.startVol + deltaY));
+            
+            // Если крутим ручку на выделенном треке - применяем ко всем выделенным
+            if (selectedTrackIds.has(activeKnob.id)) {
+                selectedTrackIds.forEach(id => {
+                    handleVolumeChangeUI(id, newVol);
+                });
+            } else {
+                handleVolumeChangeUI(activeKnob.id, newVol);
+            }
+        }
+        function onKnobRelease() {
+            activeKnob = null;
+            window.removeEventListener('mousemove', onKnobDrag);
+            window.removeEventListener('mouseup', onKnobRelease);
+        }
+
+        function handleVolumeChangeUI(tIndex, val) {
+            trackStates[tIndex].volume = val;
+            updateKnobVisual(tIndex);
+            if (midiOutput) midiOutput.send([0xB0 + tIndex, 7, val]); 
+        }
+
+        // ГРУППОВОЙ MUTE
+        function toggleMuteUI(tIndex) {
+            let newState = !trackStates[tIndex].mute;
+            if (selectedTrackIds.has(tIndex)) {
+                selectedTrackIds.forEach(id => {
+                    trackStates[id].mute = newState;
+                    if (midiOutput) midiOutput.send([0xB0 + id, 23, newState ? 127 : 0]);
+                    updateDashboardPanel(id);
+                });
+            } else {
+                trackStates[tIndex].mute = newState;
+                if (midiOutput) midiOutput.send([0xB0 + tIndex, 23, newState ? 127 : 0]);
+                updateDashboardPanel(tIndex);
+            }
+        }
+
+        // ГРУППОВОЕ SOLO
+        function toggleSoloUI(tIndex) {
+            let isTurningOn = !trackStates[tIndex].solo;
+            
+            // Выключаем остальные солирующие треки (Эксклюзивное соло)
+            if (isTurningOn) {
+                for(let i=0; i<11; i++) {
+                    if (i !== tIndex && !selectedTrackIds.has(i) && trackStates[i].solo) {
+                        trackStates[i].solo = false;
+                        if (midiOutput) midiOutput.send([0xB0 + i, 24, 0]); 
+                        updateDashboardPanel(i);
+                    }
+                }
+            }
+
+            if (selectedTrackIds.has(tIndex)) {
+                selectedTrackIds.forEach(id => {
+                    trackStates[id].solo = isTurningOn;
+                    if (midiOutput) midiOutput.send([0xB0 + id, 24, isTurningOn ? 127 : 0]);
+                    updateDashboardPanel(id);
+                });
+            } else {
+                trackStates[tIndex].solo = isTurningOn;
+                if (midiOutput) midiOutput.send([0xB0 + tIndex, 24, isTurningOn ? 127 : 0]);
+                updateDashboardPanel(tIndex);
+            }
+        }
+
+        function switchTrack(trackId, e) {
+            if (e && (e.ctrlKey || e.metaKey)) {
+                if (selectedTrackIds.has(trackId)) {
+                    if (selectedTrackIds.size > 1) { selectedTrackIds.delete(trackId); currentTrackId = Array.from(selectedTrackIds).pop(); }
+                } else { selectedTrackIds.add(trackId); currentTrackId = trackId; }
+            } else {
+                selectedTrackIds.clear(); selectedTrackIds.add(trackId); currentTrackId = trackId;
+            }
+            
+            document.querySelectorAll('.track-tab').forEach((tab, i) => {
+                tab.className = `track-tab ${selectedTrackIds.has(i) ? (currentTrackId === i ? 'active' : 'selected') : ''}`;
+            });
+            for(let i=0; i<11; i++) updateDashboardPanel(i);
+            selectedNoteIds.clear();
+            
+            rebuildGridLines(); renderNotes();
+
+            // SysEx для железного переключения канала
+            if (midiOutput && e !== null) { 
+                midiOutput.send([0xF0, 0x43, 0x20, 0x7F, 0x1C, 0x03, 0x00, 0x00, 0x00, currentTrackId, 0xF7]); 
+            }
+        }
+
+        function updatePageUI(currentBeat) {
+            let len = trackLengths[currentTrackId] || 16;
+            let totalPages = Math.ceil(len / 16);
+            let page = Math.floor(currentBeat / 16) + 1;
+            if (page > totalPages) page = totalPages; if (page < 1) page = 1;
+            
+            const pInd = document.getElementById('pageIndicator');
+            pInd.innerHTML = `<span class="jp-lg">ページ ${page} / ${totalPages}</span><span class="en-sm">PAGE ${page} / ${totalPages}</span>`;
+            
+            if (isPlaying && currentLoopPage !== page) {
+                currentLoopPage = page;
+                scrollWindow.scrollLeft = (page - 1) * 16 * PIXELS_PER_BEAT;
+            }
+        }
+
+        function rebuildGridLines() {
+            let len = trackLengths[currentTrackId];
+            timeline.style.width = (len * PIXELS_PER_BEAT) + 'px';
+            bgBeats.innerHTML = '';
+            for(let i=0; i<len*4; i++) { 
+                const bLine = document.createElement('div');
+                bLine.className = 'beat-line';
+                if (i % 4 === 0) bLine.classList.add('beat-main');
+                if (i % 64 === 63) bLine.classList.add('page-end');
+                bgBeats.appendChild(bLine);
+            }
+            updatePageUI(scrollWindow.scrollLeft / PIXELS_PER_BEAT);
+        }
+
+        function showInspector(noteObj, tIndex) {
+            const nName = notesList.find(n => n.midiNum === noteObj.pitchMidi)?.note || noteObj.pitchMidi;
+            const tName = tracks[tIndex].name;
+            const inst = (noteObj.pc >= 0) ? getSoundCategoryName(noteObj.msb, noteObj.lsb, noteObj.pc) : getSoundCategoryName(trackBanks[tIndex].msb, trackBanks[tIndex].lsb, trackBanks[tIndex].pc);
+            
+            insContent.innerHTML = `
+                <div class="ins-row"><span class="ins-lbl">TRACK:</span> <span class="jp-lg" style="color:${trackColors[tIndex]}">${tName}</span></div>
+                <div class="ins-row"><span class="ins-lbl">NOTE:</span> <span class="jp-lg">${nName}</span></div>
+                <div class="ins-row"><span class="ins-lbl">VELOCITY:</span> <span class="jp-lg">${noteObj.velocity || 100}</span></div>
+                <div class="ins-row"><span class="ins-lbl">POSITION:</span> <span class="jp-lg" style="font-size:0.8rem">${noteObj.startBeat.toFixed(2)}</span></div>
+                <div class="ins-row"><span class="ins-lbl">LENGTH:</span> <span class="jp-lg" style="font-size:0.8rem">${noteObj.durationBeat.toFixed(2)}</span></div>
+                <div class="ins-row" style="margin-top:4px; padding-top:6px; border-top:1px dashed #cbd5e1;"><span class="ins-lbl" style="color:#f97316;">P-LOCK INST:</span></div>
+                <div class="ins-row" style="font-size:0.75rem; color:#f97316; font-weight:bold; white-space:nowrap; overflow:hidden;">${inst}</div>
+            `;
+        }
+
+        function hideInspector() {
+            insContent.innerHTML = `<div class="ins-empty"><span class="en-sm">SELECT OR HOVER NOTE</span></div>`;
+        }
+
+        function initUI() {
+            tracks.forEach(t => {
+                const p = document.createElement('div'); p.id = `dash-panel-${t.id}`;
+                p.className = `dash-panel ${selectedTrackIds.has(t.id) ? 'primary active' : ''}`;
+                setTrackColor(p, t.id);
+                p.onclick = (e) => { if(!e.target.closest('.ms-controls') && !e.target.closest('.knob-container')) switchTrack(t.id, e); };
+                
+                p.innerHTML = `
+                    <div class="dash-info">
+                        <div class="dash-header">
+                            <div class="dash-title-box"><span class="jp-lg">${t.jp}</span><span class="en-sm">CH ${t.ch} | ${t.name}</span></div>
+                        </div>
+                        <div class="dash-sound" id="dash-name-${t.id}">...</div>
+                        <div class="ms-controls">
+                            <button class="btn-ms mute" id="btn-mute-${t.id}" onclick="event.stopPropagation(); toggleMuteUI(${t.id})"><span class="en-sm">M</span></button>
+                            <button class="btn-ms solo" id="btn-solo-${t.id}" onclick="event.stopPropagation(); toggleSoloUI(${t.id})"><span class="en-sm">S</span></button>
+                        </div>
+                    </div>
+                    <div class="knob-container">
+                        <span class="en-sm" style="margin-bottom:4px;">VOL</span>
+                        <div class="knob" onmousedown="startKnobDrag(event, ${t.id})">
+                            <div class="knob-ptr" id="knob-ptr-${t.id}"></div>
+                        </div>
+                    </div>
+                `;
+                dashboard.appendChild(p); updateDashboardPanel(t.id); 
+                
+                const tab = document.createElement('div');
+                tab.className = `track-tab ${selectedTrackIds.has(t.id) ? 'active' : ''}`;
+                setTrackColor(tab, t.id);
+                tab.innerHTML = `<span class="jp-lg">${t.jp}</span><span class="en-sm">${t.name}</span>`;
+                tab.onclick = (e) => switchTrack(t.id, e);
+                trackTabsContainer.appendChild(tab);
+            });
+
+            notesList.forEach(n => {
+                const key = document.createElement('div');
+                key.id = `key-${n.midiNum}`;
+                key.className = `key ${n.black ? 'black' : 'white'}`;
+                if (!n.black && (n.note.startsWith('C') || n.note.startsWith('F'))) {
+                    key.innerHTML = `<span class="en-sm">${n.note}</span>`;
+                } else { key.innerHTML = `<span class="en-sm"></span>`; }
+                keyboard.appendChild(key);
+
+                const row = document.createElement('div');
+                row.className = `bg-row ${n.black ? 'black-key-row' : ''}`;
+                bgRows.appendChild(row);
+            });
+
+            rebuildGridLines();
+            setTimeout(() => { scrollWindow.scrollTop = 1350; }, 100);
+        }
+
+        // --- РЕДАКТИРОВАНИЕ НОТ ---
+        function drawSingleNote(noteObj, t, isCurrentTrack, offsetBeat) {
+            const rowIndex = notesList.findIndex(n => n.midiNum === noteObj.pitchMidi);
+            if (rowIndex < 0) return;
+
+            const noteDiv = document.createElement('div');
+            noteDiv.className = `piano-note`;
+            if (!isCurrentTrack) noteDiv.classList.add('ghost');
+            if (selectedNoteIds.has(noteObj.id)) noteDiv.classList.add('selected-note');
+            if (lockedNoteForPLock && lockedNoteForPLock.id === noteObj.id) noteDiv.classList.add('p-lock-waiting');
+            
+            setTrackColor(noteDiv, t);
+            noteDiv.style.top = (rowIndex * ROW_HEIGHT + 1) + 'px';
+            noteDiv.style.left = ((noteObj.startBeat + offsetBeat) * PIXELS_PER_BEAT) + 'px';
+            noteDiv.style.width = (noteObj.durationBeat * PIXELS_PER_BEAT - 1) + 'px';
+
+            let vel = noteObj.velocity !== undefined ? noteObj.velocity : 100;
+            let pcText = (noteObj.pc >= 0) ? getSoundCategoryName(noteObj.msb, noteObj.lsb, noteObj.pc).split(' ')[0] : '';
+            
+            noteDiv.innerHTML = `
+                <div class="note-header"><span class="en-sm">${pcText}</span></div>
+                <div class="velocity-fill" style="height: ${(vel/127)*100}%"></div>
+            `;
+
+            noteDiv.addEventListener('mouseenter', () => showInspector(noteObj, t));
+            noteDiv.addEventListener('mouseleave', () => {
+                if(selectedNoteIds.size > 0) {
+                    let firstId = Array.from(selectedNoteIds)[0];
+                    let found = null;
+                    for(let i=0; i<11; i++){ let n = projectNotes[i].find(x=>x.id===firstId); if(n){found={note:n, track:i}; break;} }
+                    if(found) showInspector(found.note, found.track); else hideInspector();
+                } else hideInspector();
+            });
+
+            if (isCurrentTrack && offsetBeat === 0) {
+                const resizer = document.createElement('div');
+                resizer.className = 'resize-handle';
+                noteDiv.appendChild(resizer);
+
+                noteDiv.addEventListener('mousedown', (e) => {
+                    e.stopPropagation(); 
+                    
+                    if (e.shiftKey) { // VELOCITY DRAG
+                        e.preventDefault(); dragState = { type: 'velocity', note: noteObj, startY: e.clientY, startVel: vel }; return;
+                    }
+                    if (e.altKey) { // SPLIT NOTE
+                        const clickBeat = (e.clientX - timeline.getBoundingClientRect().left) / PIXELS_PER_BEAT;
+                        if (clickBeat > noteObj.startBeat + 0.1 && clickBeat < noteObj.startBeat + noteObj.durationBeat - 0.1) {
+                            let oldDur = noteObj.durationBeat; noteObj.durationBeat = clickBeat - noteObj.startBeat;
+                            projectNotes[t].push({ ...noteObj, id: Date.now() + Math.random(), startBeat: clickBeat, durationBeat: oldDur - noteObj.durationBeat });
+<script>
+        // === 1. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ===
+        const PIXELS_PER_BEAT = 40; 
+        const ROW_HEIGHT = 40; 
+        const TOTAL_BEATS = 128;
+        
+        let currentLoopPage = 1;
+        let lastCreatedNoteDuration = 1.0; 
+        let currentTrackId = 0; 
+        let selectedTrackIds = new Set([0]); 
+        let midiOutput = null;
+
+        let trackLengths = Array(11).fill(16);
+        let trackBanks = Array(11).fill().map(() => ({ msb: 63, lsb: 0, pc: -1 }));
+        let trackStates = Array(11).fill().map(() => ({ mute: false, solo: false, volume: 100 }));
+        let projectNotes = Array(11).fill().map(() => []); 
+
+        let isPlaying = false, playStartTime = 0, lastClockBeat = -1;
+        let lastTrackBeats = Array(11).fill(-1); 
+        let activeMidiNotes = new Set(); 
+        let dawTriggeredNotes = {}; 
+
+        let isRecording = false, activeRecNotes = {}; 
+
+        let selectedNoteIds = new Set();
+        let clipboard = [];
+        let isSelecting = false, selectStartX = 0, selectStartY = 0, dragState = null; 
+        let lockedNoteForPLock = null; 
+        let activeKnob = null; // Для drag'н'drop ручек громкости
+
+        // ЦВЕТА КАНАЛОВ
+        const trackColors = [
+            '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981', 
+            '#06b6d4', '#0ea5e9', '#3b82f6', 
+            '#8b5cf6' 
+        ];
+
+        const tracks = [
+            { id: 0, name: 'KICK', jp: 'キック', type: 'drum', ch: 1 }, { id: 1, name: 'SNARE', jp: 'スネア', type: 'drum', ch: 2 }, 
+            { id: 2, name: 'CLAP', jp: 'クラップ', type: 'drum', ch: 3 }, { id: 3, name: 'HAT 1', jp: 'ハット 1', type: 'drum', ch: 4 }, 
+            { id: 4, name: 'HAT 2', jp: 'ハット 2', type: 'drum', ch: 5 }, { id: 5, name: 'PERC 1', jp: 'パーカッション 1', type: 'drum', ch: 6 },
+            { id: 6, name: 'PERC 2', jp: 'パーカッション 2', type: 'drum', ch: 7 }, { id: 7, name: 'SYNTH 1', jp: 'シンセ 1', type: 'synth', ch: 8 }, 
+            { id: 8, name: 'SYNTH 2', jp: 'シンセ 2', type: 'synth', ch: 9 }, { id: 9, name: 'DX', jp: 'DX シンセ', type: 'synth', ch: 10 }, 
+            { id: 10, name: 'SAMPLER', jp: 'サンプラー', type: 'sampler', ch: 11 }
+        ];
+
+        const notesList = [];
+        const noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+        for (let midi = 95; midi >= 24; midi--) {
+            let nName = noteNames[midi % 12];
+            notesList.push({ note: nName + (Math.floor(midi / 12) - 1), midiNum: midi, black: nName.includes('#') });
+        }
+
+        // БАЗА ЗВУКОВ
+        const drumNames = ["Tight Punchy Kick","Soft Kick","Fat Kick","Distorted Kick","Saturated Kick","Rumble Kick","Lo-Fi Kick","RX7 Kick","Acoustic Kick","Tight Snare","Pitched Snare","Fat Snare","Click Snare","Lo-Fi Snare","Acoustic Snare","Glitch Snare","Wood Snare","Acoustic Rim","Analog Rim","Lo-Fi Rim","Hand Clap","Group Clap","RX11 Clap","Lo-Fi Clap","Noise Clap","Glitch Clap","Finger Snap","Tight Closed Hat","Acoustic Hat","Noise Hat","Lo-Fi Hat","Bright Open Hat","Noise Open Hat","Crash Open Hat","Shaker","Tambourine","Sharp Ride","Acoustic Ride","Crash Ride","Splash Cymbal","Acoustic High Tom","Acoustic Mid Tom","Acoustic Low Tom","Electronic Tom","Analog Cowbell","Agogo","Small Bell","Conga","Bongo","Djembe","Talking Drum","Tabla","Timbale","Cajon"];
+        const synthNames = ["Rn Bass","Buzz Bass","Acid3","Bass Morpher","Brain Bass","Dark Bass","Fat Sine","Moon Bass","Chill Out Bass","Growler","Smacked","Noise Bass","Big Bass","Rave Blade","Plastic Bass","Wah Bass","Pulse Step","Sync Bass","Puncher","Trance Bass","Oh Bee Bass","Analog Bass","Upright","Slap Switch","House Organ Bass","Multi Saw DA","Dance Synth DA","Power Hook","Saw Lead","Cool Trance","Ana Dayz","Progressive Attack","Rezz Punch","Hard FM Keyboard","Trance Attack","Tekno Attack","Detroit Stab","Noiz Rezz","Queens","Power Dance Chords","Hyper Trance","Space Lead","Vintage Sync","Dirty Hook","PWM Lead","Big Drone","Supertrance","Full Concert Grand","Rock Grand Piano","House Piano","CP80","Ballad Key","Vintage 74","Neo Soul","Dyno Straight","Vintage Case","DX Legend","DX Woody","DX-7","Hybrid EP","Analog Piano","Super Clavi","Vintage Clavi","Wah Clavi","Harpsichord","Rock Organ","Draw Organ","Church Organ","Accordion","Saw Pad","Ambient Pad","Trance","Warm Pad","Mother Ship","Landing Pad","Pure Synth","Pure Synth Delay","Bell Pad","Sci-Fi","Halo Pad","Space Vocals","Choir Pad","Lunar Eclipse","Mysterious Invention","Orchestra Hit","Rain Pad","Goblin","Violin Solo","Cello Solo","Large Section","Tremolo Strings","Disco","Synth Strings","Superstrings","Beauty Harp","Classical Trumpet","French Horn","Orchestra Brass","Sforzando","Big Band","Hybrid Brass","The Synth Brass","Soprano Sax","Alto Sax","Tenor Sax","Piccolo","Sweet Flute","Oboe","Clarinet","Harmonica","Nylon Slide","Classical12Str","Hip-Hop Guitar","Clean El & Ac","Dual Coil Amp","Overdrive","Hard Drive","Sitar","Banjo","Koto","Kalimba","Marimba","Vibraphone","Glocken","Steel Drum","Tubular Bells"];
+        
+        function getSoundCategoryName(msb, lsb, pc) {
+            if (pc < 0) return "WAITING..."; 
+            let cat = "PRESET";
+            if (msb === 63) {
+                if (pc < 112) cat = "KICK"; else if (pc < 296) cat = "SNARE/CLAP"; 
+                else if (pc < 497) cat = "HAT/SHAKER"; else if (pc < 650) cat = "CYMBAL/TOM";
+                else if (pc < 1102) cat = "BASS/LEAD"; else if (pc < 1516) cat = "PAD/STRINGS";
+                else if (pc < 1891) cat = "ACOUSTIC"; else cat = "FM SYNTH";
+            } else if (msb === 62) cat = "SAMPLE";
+            return `${cat} #${pc + 1} (B${msb}/${lsb})`;
+        }
+
+        // === 3. ПОЛУЧЕНИЕ ЭЛЕМЕНТОВ DOM ===
+        const scrollWindow = document.getElementById('scrollWindow');
+        const keyboard = document.getElementById('keyboard');
+        const bpmInput = document.getElementById('bpmInput');
+        const trackStepsInput = document.getElementById('trackStepsInput');
+        const snapToggle = document.getElementById('snapToggle');
+        const dashboard = document.getElementById('dashboard');
+        const trackTabsContainer = document.getElementById('trackTabs');
+        const notesLayer = document.getElementById('notesLayer');
+        const timeline = document.getElementById('timeline');
+        const bgRows = document.getElementById('bgRows');
+        const bgBeats = document.getElementById('bgBeats');
+        const insContent = document.getElementById('insContent');
+        const logDiv = document.getElementById('log');
+
+        scrollWindow.addEventListener('scroll', () => { keyboard.scrollTop = scrollWindow.scrollTop; });
+
+        function applySnap(val) {
+            if (!snapToggle.checked) return val;
+            return Math.round(val * 4) / 4; 
+        }
+
+        function setTrackColor(element, trackId) {
+            element.style.setProperty('--track-color', trackColors[trackId]);
+            element.style.setProperty('--note-color', trackColors[trackId]);
+        }
+
+        // --- УПРАВЛЕНИЕ МИКШЕРОМ ---
+        function updateKnobVisual(tIndex) {
+            let knobPtr = document.getElementById(`knob-ptr-${tIndex}`);
+            if (knobPtr) {
+                let vol = trackStates[tIndex].volume;
+                let deg = -135 + (vol / 127) * 270; // Map 0-127 to -135deg...+135deg
+                knobPtr.style.transform = `rotate(${deg}deg)`;
+            }
+        }
+
+        function updateDashboardPanel(tIndex) {
+            const bState = trackBanks[tIndex]; const msState = trackStates[tIndex];
+            const nameEl = document.getElementById(`dash-name-${tIndex}`);
+            if (nameEl) nameEl.textContent = getSoundCategoryName(bState.msb, bState.lsb, bState.pc);
+            
+            const btnMute = document.getElementById(`btn-mute-${tIndex}`);
+            const btnSolo = document.getElementById(`btn-solo-${tIndex}`);
+            if (btnMute) btnMute.className = `btn-ms mute ${msState.mute ? 'active' : ''}`;
+            if (btnSolo) btnSolo.className = `btn-ms solo ${msState.solo ? 'active' : ''}`;
+
+            updateKnobVisual(tIndex);
+
+            const panel = document.getElementById(`dash-panel-${tIndex}`);
+            if(panel) {
+                panel.className = `dash-panel ${selectedTrackIds.has(tIndex) ? (currentTrackId === tIndex ? 'primary active' : 'active') : ''}`;
+                setTrackColor(panel, tIndex);
+            }
+        }
+
+        // ГРУППОВАЯ ГРОМКОСТЬ (Мышь)
+        function startKnobDrag(e, tIndex) {
+            e.stopPropagation();
+            activeKnob = { id: tIndex, startY: e.clientY, startVol: trackStates[tIndex].volume };
+            window.addEventListener('mousemove', onKnobDrag);
+            window.addEventListener('mouseup', onKnobRelease);
+        }
+        function onKnobDrag(e) {
+            if(!activeKnob) return;
+            let deltaY = activeKnob.startY - e.clientY; // Вверх - плюс
+            let newVol = Math.max(0, Math.min(127, activeKnob.startVol + deltaY));
+            
+            // Если крутим ручку на выделенном треке - применяем ко всем выделенным
+            if (selectedTrackIds.has(activeKnob.id)) {
+                selectedTrackIds.forEach(id => {
+                    handleVolumeChangeUI(id, newVol);
+                });
+            } else {
+                handleVolumeChangeUI(activeKnob.id, newVol);
+            }
+        }
+        function onKnobRelease() {
+            activeKnob = null;
+            window.removeEventListener('mousemove', onKnobDrag);
+            window.removeEventListener('mouseup', onKnobRelease);
+        }
+
+        function handleVolumeChangeUI(tIndex, val) {
+            trackStates[tIndex].volume = val;
+            updateKnobVisual(tIndex);
+            if (midiOutput) midiOutput.send([0xB0 + tIndex, 7, val]); 
+        }
+
+        // ГРУППОВОЙ MUTE
+        function toggleMuteUI(tIndex) {
+            let newState = !trackStates[tIndex].mute;
+            if (selectedTrackIds.has(tIndex)) {
+                selectedTrackIds.forEach(id => {
+                    trackStates[id].mute = newState;
+                    if (midiOutput) midiOutput.send([0xB0 + id, 23, newState ? 127 : 0]);
+                    updateDashboardPanel(id);
+                });
+            } else {
+                trackStates[tIndex].mute = newState;
+                if (midiOutput) midiOutput.send([0xB0 + tIndex, 23, newState ? 127 : 0]);
+                updateDashboardPanel(tIndex);
+            }
+        }
+
+        // ГРУППОВОЕ SOLO
+        function toggleSoloUI(tIndex) {
+            let isTurningOn = !trackStates[tIndex].solo;
+            
+            // Выключаем остальные солирующие треки (Эксклюзивное соло)
+            if (isTurningOn) {
+                for(let i=0; i<11; i++) {
+                    if (i !== tIndex && !selectedTrackIds.has(i) && trackStates[i].solo) {
+                        trackStates[i].solo = false;
+                        if (midiOutput) midiOutput.send([0xB0 + i, 24, 0]); 
+                        updateDashboardPanel(i);
+                    }
+                }
+            }
+
+            if (selectedTrackIds.has(tIndex)) {
+                selectedTrackIds.forEach(id => {
+                    trackStates[id].solo = isTurningOn;
+                    if (midiOutput) midiOutput.send([0xB0 + id, 24, isTurningOn ? 127 : 0]);
+                    updateDashboardPanel(id);
+                });
+            } else {
+                trackStates[tIndex].solo = isTurningOn;
+                if (midiOutput) midiOutput.send([0xB0 + tIndex, 24, isTurningOn ? 127 : 0]);
+                updateDashboardPanel(tIndex);
+            }
+        }
+
+        function switchTrack(trackId, e) {
+            if (e && (e.ctrlKey || e.metaKey)) {
+                if (selectedTrackIds.has(trackId)) {
+                    if (selectedTrackIds.size > 1) { selectedTrackIds.delete(trackId); currentTrackId = Array.from(selectedTrackIds).pop(); }
+                } else { selectedTrackIds.add(trackId); currentTrackId = trackId; }
+            } else {
+                selectedTrackIds.clear(); selectedTrackIds.add(trackId); currentTrackId = trackId;
+            }
+            
+            document.querySelectorAll('.track-tab').forEach((tab, i) => {
+                tab.className = `track-tab ${selectedTrackIds.has(i) ? (currentTrackId === i ? 'active' : 'selected') : ''}`;
+            });
+            for(let i=0; i<11; i++) updateDashboardPanel(i);
+            selectedNoteIds.clear();
+            
+            rebuildGridLines(); renderNotes();
+
+            // SysEx для железного переключения канала
+            if (midiOutput && e !== null) { 
+                midiOutput.send([0xF0, 0x43, 0x20, 0x7F, 0x1C, 0x03, 0x00, 0x00, 0x00, currentTrackId, 0xF7]); 
+            }
+        }
+
+        function updatePageUI(currentBeat) {
+            let len = trackLengths[currentTrackId] || 16;
+            let totalPages = Math.ceil(len / 16);
+            let page = Math.floor(currentBeat / 16) + 1;
+            if (page > totalPages) page = totalPages; if (page < 1) page = 1;
+            
+            const pInd = document.getElementById('pageIndicator');
+            pInd.innerHTML = `<span class="jp-lg">ページ ${page} / ${totalPages}</span><span class="en-sm">PAGE ${page} / ${totalPages}</span>`;
+            
+            if (isPlaying && currentLoopPage !== page) {
+                currentLoopPage = page;
+                scrollWindow.scrollLeft = (page - 1) * 16 * PIXELS_PER_BEAT;
+            }
+        }
+
+        function rebuildGridLines() {
+            let len = trackLengths[currentTrackId];
+            timeline.style.width = (len * PIXELS_PER_BEAT) + 'px';
+            bgBeats.innerHTML = '';
+            for(let i=0; i<len*4; i++) { 
+                const bLine = document.createElement('div');
+                bLine.className = 'beat-line';
+                if (i % 4 === 0) bLine.classList.add('beat-main');
+                if (i % 64 === 63) bLine.classList.add('page-end');
+                bgBeats.appendChild(bLine);
+            }
+            updatePageUI(scrollWindow.scrollLeft / PIXELS_PER_BEAT);
+        }
+
+        function showInspector(noteObj, tIndex) {
+            const nName = notesList.find(n => n.midiNum === noteObj.pitchMidi)?.note || noteObj.pitchMidi;
+            const tName = tracks[tIndex].name;
+            const inst = (noteObj.pc >= 0) ? getSoundCategoryName(noteObj.msb, noteObj.lsb, noteObj.pc) : getSoundCategoryName(trackBanks[tIndex].msb, trackBanks[tIndex].lsb, trackBanks[tIndex].pc);
+            
+            insContent.innerHTML = `
+                <div class="ins-row"><span class="ins-lbl">TRACK:</span> <span class="jp-lg" style="color:${trackColors[tIndex]}">${tName}</span></div>
+                <div class="ins-row"><span class="ins-lbl">NOTE:</span> <span class="jp-lg">${nName}</span></div>
+                <div class="ins-row"><span class="ins-lbl">VELOCITY:</span> <span class="jp-lg">${noteObj.velocity || 100}</span></div>
+                <div class="ins-row"><span class="ins-lbl">POSITION:</span> <span class="jp-lg" style="font-size:0.8rem">${noteObj.startBeat.toFixed(2)}</span></div>
+                <div class="ins-row"><span class="ins-lbl">LENGTH:</span> <span class="jp-lg" style="font-size:0.8rem">${noteObj.durationBeat.toFixed(2)}</span></div>
+                <div class="ins-row" style="margin-top:4px; padding-top:6px; border-top:1px dashed #cbd5e1;"><span class="ins-lbl" style="color:#f97316;">P-LOCK INST:</span></div>
+                <div class="ins-row" style="font-size:0.75rem; color:#f97316; font-weight:bold; white-space:nowrap; overflow:hidden;">${inst}</div>
+            `;
+        }
+
+        function hideInspector() {
+            insContent.innerHTML = `<div class="ins-empty"><span class="en-sm">SELECT OR HOVER NOTE</span></div>`;
+        }
+
+        function initUI() {
+            tracks.forEach(t => {
+                const p = document.createElement('div'); p.id = `dash-panel-${t.id}`;
+                p.className = `dash-panel ${selectedTrackIds.has(t.id) ? 'primary active' : ''}`;
+                setTrackColor(p, t.id);
+                p.onclick = (e) => { if(!e.target.closest('.ms-controls') && !e.target.closest('.knob-container')) switchTrack(t.id, e); };
+                
+                p.innerHTML = `
+                    <div class="dash-info">
+                        <div class="dash-header">
+                            <div class="dash-title-box"><span class="jp-lg">${t.jp}</span><span class="en-sm">CH ${t.ch} | ${t.name}</span></div>
+                        </div>
+                        <div class="dash-sound" id="dash-name-${t.id}">...</div>
+                        <div class="ms-controls">
+                            <button class="btn-ms mute" id="btn-mute-${t.id}" onclick="event.stopPropagation(); toggleMuteUI(${t.id})"><span class="en-sm">M</span></button>
+                            <button class="btn-ms solo" id="btn-solo-${t.id}" onclick="event.stopPropagation(); toggleSoloUI(${t.id})"><span class="en-sm">S</span></button>
+                        </div>
+                    </div>
+                    <div class="knob-container">
+                        <span class="en-sm" style="margin-bottom:4px;">VOL</span>
+                        <div class="knob" onmousedown="startKnobDrag(event, ${t.id})">
+                            <div class="knob-ptr" id="knob-ptr-${t.id}"></div>
+                        </div>
+                    </div>
+                `;
+                dashboard.appendChild(p); updateDashboardPanel(t.id); 
+                
+                const tab = document.createElement('div');
+                tab.className = `track-tab ${selectedTrackIds.has(t.id) ? 'active' : ''}`;
+                setTrackColor(tab, t.id);
+                tab.innerHTML = `<span class="jp-lg">${t.jp}</span><span class="en-sm">${t.name}</span>`;
+                tab.onclick = (e) => switchTrack(t.id, e);
+                trackTabsContainer.appendChild(tab);
+            });
+
+            notesList.forEach(n => {
+                const key = document.createElement('div');
+                key.id = `key-${n.midiNum}`;
+                key.className = `key ${n.black ? 'black' : 'white'}`;
+                if (!n.black && (n.note.startsWith('C') || n.note.startsWith('F'))) {
+                    key.innerHTML = `<span class="en-sm">${n.note}</span>`;
+                } else { key.innerHTML = `<span class="en-sm"></span>`; }
+                keyboard.appendChild(key);
+
+                const row = document.createElement('div');
+                row.className = `bg-row ${n.black ? 'black-key-row' : ''}`;
+                bgRows.appendChild(row);
+            });
+
+            rebuildGridLines();
+            setTimeout(() => { scrollWindow.scrollTop = 1350; }, 100);
+        }
+
+        // --- РЕДАКТИРОВАНИЕ НОТ ---
+        function drawSingleNote(noteObj, t, isCurrentTrack, offsetBeat) {
+            const rowIndex = notesList.findIndex(n => n.midiNum === noteObj.pitchMidi);
+            if (rowIndex < 0) return;
+
+            const noteDiv = document.createElement('div');
+            noteDiv.className = `piano-note`;
+            if (!isCurrentTrack) noteDiv.classList.add('ghost');
+            if (selectedNoteIds.has(noteObj.id)) noteDiv.classList.add('selected-note');
+            if (lockedNoteForPLock && lockedNoteForPLock.id === noteObj.id) noteDiv.classList.add('p-lock-waiting');
+            
+            setTrackColor(noteDiv, t);
+            noteDiv.style.top = (rowIndex * ROW_HEIGHT + 1) + 'px';
+            noteDiv.style.left = ((noteObj.startBeat + offsetBeat) * PIXELS_PER_BEAT) + 'px';
+            noteDiv.style.width = (noteObj.durationBeat * PIXELS_PER_BEAT - 1) + 'px';
+
+            let vel = noteObj.velocity !== undefined ? noteObj.velocity : 100;
+            let pcText = (noteObj.pc >= 0) ? getSoundCategoryName(noteObj.msb, noteObj.lsb, noteObj.pc).split(' ')[0] : '';
+            
+            noteDiv.innerHTML = `
+                <div class="note-header"><span class="en-sm">${pcText}</span></div>
+                <div class="velocity-fill" style="height: ${(vel/127)*100}%"></div>
+            `;
+
+            noteDiv.addEventListener('mouseenter', () => showInspector(noteObj, t));
+            noteDiv.addEventListener('mouseleave', () => {
+                if(selectedNoteIds.size > 0) {
+                    let firstId = Array.from(selectedNoteIds)[0];
+                    let found = null;
+                    for(let i=0; i<11; i++){ let n = projectNotes[i].find(x=>x.id===firstId); if(n){found={note:n, track:i}; break;} }
+                    if(found) showInspector(found.note, found.track); else hideInspector();
+                } else hideInspector();
+            });
+
+            if (isCurrentTrack && offsetBeat === 0) {
+                const resizer = document.createElement('div');
+                resizer.className = 'resize-handle';
+                noteDiv.appendChild(resizer);
+
+                noteDiv.addEventListener('mousedown', (e) => {
+                    e.stopPropagation(); 
+                    
+                    if (e.shiftKey) { // VELOCITY DRAG
+                        e.preventDefault(); dragState = { type: 'velocity', note: noteObj, startY: e.clientY, startVel: vel }; return;
+                    }
+                    if (e.altKey) { // SPLIT NOTE
+                        const clickBeat = (e.clientX - timeline.getBoundingClientRect().left) / PIXELS_PER_BEAT;
+                        if (clickBeat > noteObj.startBeat + 0.1 && clickBeat < noteObj.startBeat + noteObj.durationBeat - 0.1) {
+                            let oldDur = noteObj.durationBeat; noteObj.durationBeat = clickBeat - noteObj.startBeat;
+                            projectNotes[t].push({ ...noteObj, id: Date.now() + Math.random(), startBeat: clickBeat, durationBeat: oldDur - noteObj.durationBeat });
+renderNotes();
+                        }
+                        return;
+                    }
+
+                    // P-LOCK (HOLD MOUSE)
+                    lockedNoteForPLock = noteObj;
+                    noteDiv.classList.add('p-lock-waiting');
+
+                    if (!selectedNoteIds.has(noteObj.id)) { if (!e.ctrlKey) selectedNoteIds.clear(); selectedNoteIds.add(noteObj.id); }
+
+                    if (e.target.classList.contains('resize-handle')) {
+                        dragState = { type: 'resize', startX: e.clientX, startWidthB: noteObj.durationBeat };
+                    } else {
+                        let startStates = [];
+                        selectedTrackIds.forEach(stId => {
+                            projectNotes[stId].forEach(n => { if(selectedNoteIds.has(n.id)) startStates.push({ note: n, startBeat: n.startBeat, startPitch: n.pitchMidi }); });
+                        });
+                        dragState = { type: 'move', startX: e.clientX, startY: e.clientY, startStates: startStates };
+                    }
+                    renderNotes();
+                });
+            }
+            notesLayer.appendChild(noteDiv);
+        }
+
+        function renderNotes() {
+            notesLayer.innerHTML = '';
+            let currentLen = trackLengths[currentTrackId];
+            trackStepsInput.value = currentLen;
+
+            for (let t = 0; t < 11; t++) {
+                const isCurrentTrack = selectedTrackIds.has(t);
+                let tLen = trackLengths[t];
+
+                projectNotes[t].forEach(noteObj => {
+                    drawSingleNote(noteObj, t, isCurrentTrack, 0);
+                    if (!isCurrentTrack && tLen < currentLen) {
+                        let repeats = Math.ceil(currentLen / tLen);
+                        for (let i = 1; i < repeats; i++) {
+                            let offset = i * tLen;
+                            if (noteObj.startBeat + offset < currentLen) drawSingleNote(noteObj, t, false, offset);
+                        }
+                    }
+                });
+            }
+        }
+
+        timeline.addEventListener('mousedown', (e) => {
+            if (e.button !== 0 || dragState || e.altKey || e.shiftKey) return; 
+            const rect = timeline.getBoundingClientRect();
+            isSelecting = true; selectStartX = e.clientX - rect.left; selectStartY = e.clientY - rect.top;
+            if(!e.ctrlKey) selectedNoteIds.clear();
+            
+            const selBox = document.getElementById('selectionBox');
+            selBox.style.left = selectStartX + 'px'; selBox.style.top = selectStartY + 'px';
+            selBox.style.width = '0px'; selBox.style.height = '0px';
+            selBox.style.display = 'block'; renderNotes();
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (isSelecting) {
+                const x = e.clientX - timeline.getBoundingClientRect().left; 
+                const y = e.clientY - timeline.getBoundingClientRect().top;
+                const selBox = document.getElementById('selectionBox');
+                
+                let boxX = Math.min(x, selectStartX); let boxY = Math.min(y, selectStartY);
+                let boxW = Math.abs(x - selectStartX); let boxH = Math.abs(y - selectStartY);
+                
+                if (snapToggle.checked) {
+                    let bStart = Math.floor((boxX / PIXELS_PER_BEAT) * 4) / 4;
+                    let bEnd = Math.ceil(((boxX + boxW) / PIXELS_PER_BEAT) * 4) / 4;
+                    boxX = bStart * PIXELS_PER_BEAT; boxW = (bEnd - bStart) * PIXELS_PER_BEAT;
+                }
+
+                selBox.style.left = boxX + 'px'; selBox.style.top = boxY + 'px';
+                selBox.style.width = boxW + 'px'; selBox.style.height = boxH + 'px';
+                
+                const beatStart = boxX / PIXELS_PER_BEAT; const beatEnd = (boxX + boxW) / PIXELS_PER_BEAT;
+                const rowStart = boxY / ROW_HEIGHT; const rowEnd = (boxY + boxH) / ROW_HEIGHT;
+
+                selectedTrackIds.forEach(tId => {
+                    projectNotes[tId].forEach(n => {
+                        const rowIdx = notesList.findIndex(nl => nl.midiNum === n.pitchMidi);
+                        if (n.startBeat < beatEnd && (n.startBeat + n.durationBeat) > beatStart && rowIdx >= rowStart && rowIdx <= rowEnd) {
+                            selectedNoteIds.add(n.id);
+                        } else if (!e.ctrlKey) selectedNoteIds.delete(n.id);
+                    });
+                });
+                renderNotes(); return;
+            }
+
+            if (!dragState) return;
+            
+            if (dragState.type === 'velocity') {
+                let diffY = dragState.startY - e.clientY; 
+                let newVel = Math.floor(Math.max(1, Math.min(127, dragState.startVel + diffY)));
+                if (selectedNoteIds.has(dragState.note.id)) {
+                    selectedTrackIds.forEach(tId => { projectNotes[tId].forEach(n => { if (selectedNoteIds.has(n.id)) n.velocity = newVel; }); });
+                } else dragState.note.velocity = newVel;
+                showInspector(dragState.note, currentTrackId);
+            }
+            else if (dragState.type === 'resize') {
+                const diffBeats = (e.clientX - dragState.startX) / PIXELS_PER_BEAT;
+                let newDur = Math.max(0.1, dragState.startWidthB + diffBeats);
+                newDur = applySnap(newDur);
+
+                selectedTrackIds.forEach(tId => {
+                    projectNotes[tId].forEach(n => { if(selectedNoteIds.has(n.id)) n.durationBeat = newDur; });
+                });
+                lastCreatedNoteDuration = newDur; 
+            } else if (dragState.type === 'move') {
+                const diffBeats = (e.clientX - dragState.startX) / PIXELS_PER_BEAT;
+                const diffRows = Math.round((e.clientY - dragState.startY) / ROW_HEIGHT);
+
+                dragState.startStates.forEach(st => {
+                    let newBeat = Math.max(0, st.startBeat + diffBeats);
+                    st.note.startBeat = applySnap(newBeat);
+                    let oldRow = notesList.findIndex(n => n.midiNum === st.startPitch);
+                    let newRow = Math.max(0, Math.min(oldRow + diffRows, notesList.length - 1));
+                    st.note.pitchMidi = notesList[newRow].midiNum;
+                });
+            }
+            renderNotes();
+        });
+
+        window.addEventListener('mouseup', (e) => { 
+            if (lockedNoteForPLock) { lockedNoteForPLock = null; renderNotes(); }
+
+            if (isSelecting) {
+                document.getElementById('selectionBox').style.display = 'none';
+                const x = e.clientX - timeline.getBoundingClientRect().left;
+                if (Math.abs(x - selectStartX) < 5) { 
+                    let beat = Math.max(0, selectStartX / PIXELS_PER_BEAT);
+                    beat = applySnap(beat);
+                    const rowIndex = Math.floor(selectStartY / ROW_HEIGHT);
+                    if (rowIndex >= 0 && rowIndex < notesList.length) {
+                        const bState = trackBanks[currentTrackId];
+                        const newNote = { 
+                            id: Date.now() + Math.random(), pitchMidi: notesList[rowIndex].midiNum, 
+                            startBeat: beat, durationBeat: applySnap(lastCreatedNoteDuration), velocity: 100,
+                            msb: bState.msb, lsb: bState.lsb, pc: -1 
+                        };
+                        projectNotes[currentTrackId].push(newNote);
+                        selectedNoteIds.clear(); selectedNoteIds.add(newNote.id);
+                        
+                        if (midiOutput) {
+                            let ch = currentTrackId;
+                            if (newNote.pc >= 0) { midiOutput.send([0xB0+ch, 0, newNote.msb]); midiOutput.send([0xB0+ch, 32, newNote.lsb]); midiOutput.send([0xC0+ch, newNote.pc]); }
+                            midiOutput.send([0x90 + ch, newNote.pitchMidi, newNote.velocity]);
+                            setTimeout(() => { midiOutput.send([0x80 + ch, newNote.pitchMidi, 0]); }, 200);
+                        }
+                    }
+                }
+            }
+            isSelecting = false; dragState = null; renderNotes();
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT') return;
+            if (e.key === 'Delete') {
+                selectedTrackIds.forEach(tId => { projectNotes[tId] = projectNotes[tId].filter(n => !selectedNoteIds.has(n.id)); });
+                selectedNoteIds.clear(); renderNotes();
+            }
+            if (e.ctrlKey && e.key === 'c') {
+                clipboard = [];
+                selectedTrackIds.forEach(tId => { projectNotes[tId].filter(n => selectedNoteIds.has(n.id)).forEach(n => clipboard.push({...n, originalTrackId: tId})); });
+            }
+            if (e.ctrlKey && e.key === 'x') {
+                clipboard = [];
+                selectedTrackIds.forEach(tId => { 
+                    projectNotes[tId].filter(n => selectedNoteIds.has(n.id)).forEach(n => clipboard.push({...n, originalTrackId: tId})); 
+                    projectNotes[tId] = projectNotes[tId].filter(n => !selectedNoteIds.has(n.id));
+                });
+                selectedNoteIds.clear(); renderNotes();
+            }
+            if (e.ctrlKey && e.key === 'v') {
+                if(clipboard.length === 0) return;
+                let minBeat = Math.min(...clipboard.map(n => n.startBeat));
+                let pasteBeat = isPlaying ? lastTrackBeats[currentTrackId] : (scrollWindow.scrollLeft / PIXELS_PER_BEAT);
+                if(pasteBeat < 0) pasteBeat = 0; pasteBeat = applySnap(pasteBeat);
+                
+                selectedNoteIds.clear();
+                clipboard.forEach(n => {
+                    let tId = selectedTrackIds.has(n.originalTrackId) ? n.originalTrackId : currentTrackId;
+                    let newNote = {...n, id: Date.now()+Math.random(), startBeat: applySnap(n.startBeat - minBeat + pasteBeat)};
+                    projectNotes[tId].push(newNote); selectedNoteIds.add(newNote.id);
+                });
+                renderNotes();
+            }
+        });
+// --- 6. ДВИЖОК ПОЛИМЕТРИИ ---
+        function sendMidiOut(msg) {
+            if (!midiOutput) return;
+            let type = msg[0] >> 4;
+            if (type === 9 || type === 8) dawTriggeredNotes[`${msg[0] & 0x0F}-${msg[1]}`] = performance.now();
+            midiOutput.send(msg);
+        }
+
+        function stopAllMidiNotesForTrack(tIndex) {
+            activeMidiNotes.forEach(key => {
+                const parts = key.split('-');
+                if(parseInt(parts[0]) === tIndex) { sendMidiOut([0x80 + parseInt(parts[0]), parseInt(parts[1]), 0]); activeMidiNotes.delete(key); }
+            });
+        }
+        function stopAllMidiNotes() { for(let i=0; i<11; i++) stopAllMidiNotesForTrack(i); }
+
+        function engineLoop() {
+            if (!isPlaying) return;
+            let bpm = parseInt(bpmInput.value) || 120;
+            let currentAbsoluteBeat = (((performance.now() - playStartTime) / 60000) * bpm);
+
+            let currentAbsoluteClock = Math.floor(currentAbsoluteBeat * 24);
+            if (currentAbsoluteClock > lastClockBeat) {
+                let ticks = currentAbsoluteClock - lastClockBeat;
+                if (ticks > 24) ticks = 24; 
+                for (let i = 0; i < ticks; i++) { if (midiOutput) midiOutput.send([248]); }
+                lastClockBeat = currentAbsoluteClock;
+            }
+
+            let visualBeat = currentAbsoluteBeat % trackLengths[currentTrackId];
+            document.getElementById('playhead').style.left = (visualBeat * PIXELS_PER_BEAT) + 'px';
+            updatePageUI(visualBeat);
+
+            const anySolo = trackStates.some(s => s.solo);
+
+            for (let t = 0; t < 11; t++) {
+                let tLen = trackLengths[t];
+                let tBeat = currentAbsoluteBeat % tLen;
+
+                if (tBeat < lastTrackBeats[t]) { stopAllMidiNotesForTrack(t); }
+                lastTrackBeats[t] = tBeat;
+
+                let shouldPlay = anySolo ? trackStates[t].solo : !trackStates[t].mute;
+
+                projectNotes[t].forEach(note => {
+                    let noteId = `${t}-${note.pitchMidi}-${note.id}`;
+                    if (shouldPlay && tBeat >= note.startBeat && tBeat < (note.startBeat + note.durationBeat)) {
+                        if (!activeMidiNotes.has(noteId)) { 
+                            activeMidiNotes.add(noteId); 
+                            if (note.pc >= 0) { 
+                                sendMidiOut([0xB0 + t, 0, note.msb]); sendMidiOut([0xB0 + t, 32, note.lsb]); sendMidiOut([0xC0 + t, note.pc]);
+                            }
+                            sendMidiOut([0x90 + t, note.pitchMidi, note.velocity || 100]); 
+                        }
+                    } else {
+                        if (activeMidiNotes.has(noteId)) { 
+                            activeMidiNotes.delete(noteId); sendMidiOut([0x80 + t, note.pitchMidi, 0]); 
+                        }
+                    }
+                });
+            }
+            requestAnimationFrame(engineLoop); 
+        }
+
+        function startPlayback(fromHardware = false) {
+            if (isPlaying) return; isPlaying = true; 
+            let bpm = parseInt(bpmInput.value) || 120;
+            let currentScrollBeat = scrollWindow.scrollLeft / PIXELS_PER_BEAT;
+            playStartTime = performance.now() - (currentScrollBeat * 60000 / bpm); 
+            
+            for(let i=0; i<11; i++) lastTrackBeats[i] = -1;
+            lastClockBeat = Math.floor(currentScrollBeat * 24) - 1;
+
+            const stJp = document.getElementById('recStatusJp'); const stEn = document.getElementById('recStatusEn');
+            if (isRecording) { stJp.textContent = "録音中"; stJp.style.color = "#ef4444"; stEn.textContent = "RECORDING"; } 
+            else { stJp.textContent = "再生中"; stJp.style.color = "#10b981"; stEn.textContent = "PLAYING"; }
+
+            const btn = document.getElementById('btnPlayStop');
+            btn.innerHTML = '<span class="jp-lg">停止</span><span class="en-sm">STOP</span>'; btn.style.borderColor = '#dc2626'; btn.style.background = '#ef4444';
+            
+            if (!fromHardware && midiOutput) midiOutput.send([250]); 
+            requestAnimationFrame(engineLoop); 
+        }
+
+        function stopPlayback(fromHardware = false) {
+            if (!isPlaying) return;
+            isPlaying = false; stopAllMidiNotes(); 
+            
+            const stJp = document.getElementById('recStatusJp'); const stEn = document.getElementById('recStatusEn');
+            stJp.textContent = "待機中"; stJp.style.color = "#64748b"; stEn.textContent = "READY";
+            
+            document.getElementById('btnRecord').classList.remove('active'); isRecording = false;
+            
+            const btn = document.getElementById('btnPlayStop');
+            btn.innerHTML = '<span class="jp-lg">再生</span><span class="en-sm">PLAY</span>'; btn.style.borderColor = '#059669'; btn.style.background = '#10b981';
+
+            if (!fromHardware && midiOutput) midiOutput.send([252]); 
+        }
+
+        document.getElementById('btnPlayStop').onclick = () => { isPlaying ? stopPlayback(false) : startPlayback(false); };
+        
+        document.getElementById('btnClear').onclick = () => {
+            if(confirm(`Очистить выделенные треки?`)) { selectedTrackIds.forEach(id => { projectNotes[id] = []; }); stopAllMidiNotes(); renderNotes(); }
+        };
+
+        document.getElementById('btnRecord').onclick = () => {
+            isRecording = !isRecording;
+            const stJp = document.getElementById('recStatusJp'); const stEn = document.getElementById('recStatusEn');
+            if(isRecording){
+                document.getElementById('btnRecord').classList.add('active');
+                if(isPlaying) { stJp.textContent = "録音中"; stJp.style.color = "#ef4444"; stEn.textContent = "RECORDING"; }
+            } else {
+                document.getElementById('btnRecord').classList.remove('active');
+                if(isPlaying) { stJp.textContent = "再生中"; stJp.style.color = "#10b981"; stEn.textContent = "PLAYING"; }
+                else { stJp.textContent = "待機中"; stJp.style.color = "#64748b"; stEn.textContent = "READY"; }
+            }
+        };
+
+        // БЕЗОПАСНОЕ СОХРАНЕНИЕ
+        document.getElementById('btnSave').addEventListener('click', () => {
+            try {
+                const data = { projectNotes, trackLengths, trackBanks, trackStates };
+                const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none'; a.href = url;
+                a.download = `seqtrak_project_${Date.now()}.json`;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => { document.body.removeChild(a); window.URL.revokeObjectURL(url); }, 200);
+            } catch(e) { logMessage("ERROR SAVING: " + e.message); }
+        });
+
+        document.getElementById('btnLoad').addEventListener('click', () => { document.getElementById('fileInput').click(); });
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    if (data.projectNotes) projectNotes = data.projectNotes;
+                    if (data.trackLengths) trackLengths = data.trackLengths;
+                    if (data.trackStates) trackStates = data.trackStates;
+                    if (data.trackBanks) trackBanks = data.trackBanks;
+                    
+                    for(let i=0; i<11; i++) updateDashboardPanel(i);
+                    switchTrack(currentTrackId, null);
+                    
+                    const stJp = document.getElementById('recStatusJp'); const stEn = document.getElementById('recStatusEn');
+                    stJp.textContent = "完了"; stJp.style.color = "#f59e0b"; stEn.textContent = "LOADED";
+                } catch(err) { logMessage("ERROR LOADING: " + err.message); }
+            }; reader.readAsText(file); e.target.value = ''; 
+        });
+
+        // --- 8. ПОДКЛЮЧЕНИЕ И ПАРСЕР MIDI ---
+        function logMessage(text) {
+            const now = performance.now(); const timeString = new Date().toLocaleTimeString('ru-RU', {hour12:false});
+            const entry = document.createElement('div'); entry.className = 'log-entry';
+            entry.innerHTML = `<span class="c-time">[${timeString}]</span> <span class="en-sm" style="color:#cbd5e1; font-weight:normal;">${text}</span>`; 
+            logDiv.prepend(entry);
+        }
+
+        if (navigator.requestMIDIAccess) {
+            navigator.requestMIDIAccess({ sysex: true }).then(midiAccess => {
+                let bestIn = null; let bestOut = null;
+                for (let input of midiAccess.inputs.values()) {
+                    let n = input.name.toLowerCase();
+                    if (n.includes("seqtrak")) { if (!n.includes("midiin2") && !n.includes("port 2")) bestIn = input; else if (!bestIn) bestIn = input; }
+                }
+                for (let output of midiAccess.outputs.values()) {
+                    let n = output.name.toLowerCase();
+                    if (n.includes("seqtrak")) { if (!n.includes("midiout2") && !n.includes("port 2")) bestOut = output; else if (!bestOut) bestOut = output; }
+                }
+                if (bestIn) { bestIn.onmidimessage = handleMIDI; logMessage("MIDI IN Connected"); }
+                if (bestOut) { midiOutput = bestOut; logMessage("MIDI OUT Connected"); }
+            });
+        }
+
+        initUI(); 
+
+        function handleMIDI(message) {
+            const data = message.data; const command = data[0];
+            
+            if (command === 250 || command === 251) { startPlayback(true); return; } 
+            if (command === 252) { stopPlayback(true); return; } 
+            if (command === 248 || command === 254) return; 
+
+            let bpm = parseInt(bpmInput.value) || 120;
+            let currentAbsoluteBeat = (((performance.now() - playStartTime) / 60000) * bpm);
+
+            const messageType = command >> 4;
+            let channel = -1;
+            if (messageType >= 8 && messageType <= 14) channel = command & 0x0F;
+            
+            if (messageType === 9 || messageType === 8) {
+                let noteKey = `${channel}-${data[1]}`;
+                if (dawTriggeredNotes[noteKey] && (performance.now() - dawTriggeredNotes[noteKey] < 200)) return; 
+            }
+
+            // ПЕРЕКЛЮЧЕНИЕ КАНАЛОВ (Синхронизация по нажатию кнопок, пока секвенсор остановлен!)
+            if (!isPlaying && (messageType === 9 || messageType === 11)) {
+                if (channel >= 0 && channel <= 10 && currentTrackId !== channel) {
+                    switchTrack(channel, null);
+                }
+            }
+            
+            // Также реагируем на SysEx смену каналов
+            if (command === 240 && data[1] === 0x43 && data.length >= 11) {
+                if (data[3] === 0x7F && data[4] === 0x1C && data[5] === 0x03 && data[6] === 0x00 && data[7] === 0x00 && data[8] === 0x00) {
+                    let part = data[9];
+                    if (part >= 0 && part <= 10 && currentTrackId !== part) switchTrack(part, null);
+                }
+            }
+
+            if (messageType === 11) {
+                const ccNumber = data[1];
+                if (ccNumber === 23) { 
+                    trackStates[channel].mute = (data[2] > 0); 
+                    updateDashboardPanel(channel); 
+                }
+                else if (ccNumber === 24) { 
+                    let isSoloOn = (data[2] > 0);
+                    if (isSoloOn) trackStates.forEach(s => s.solo = false); 
+                    trackStates[channel].solo = isSoloOn; 
+                    updateDashboardPanel(channel); 
+                }
+                else if (ccNumber === 7) { trackStates[channel].volume = data[2]; updateDashboardPanel(channel); }
+                else if (ccNumber === 0) {
+                    if (lockedNoteForPLock) lockedNoteForPLock.msb = data[2];
+                    else trackBanks[channel].msb = data[2];
+                }
+                else if (ccNumber === 32) {
+                    if (lockedNoteForPLock) lockedNoteForPLock.lsb = data[2];
+                    else trackBanks[channel].lsb = data[2];
+                }
+            }
+            else if (messageType === 12) {
+                if (lockedNoteForPLock) {
+                    lockedNoteForPLock.pc = data[1];
+                    renderInspector({note: lockedNoteForPLock, track: currentTrackId});
+                    renderNotes(); 
+                } else {
+                    trackBanks[channel].pc = data[1];
+                    updateDashboardPanel(channel); 
+                }
+            }
+            else if (messageType === 9 && data[2] > 0) {
+                let noteKey = `${channel}-${data[1]}`;
+                let now = performance.now();
+                if (lastHardwareNotes[noteKey] && (now - lastHardwareNotes[noteKey] < 50)) return; 
+                lastHardwareNotes[noteKey] = now;
+
+                let keyEl = document.getElementById(`key-${data[1]}`);
+                if (keyEl) keyEl.classList.add('playing');
+
+                if (isRecording && isPlaying) {
+                    let tLen = trackLengths[channel];
+                    let tBeat = currentAbsoluteBeat % tLen;
+                    const bState = trackBanks[channel];
+                    
+                    activeRecNotes[noteKey] = { 
+                        id: Date.now() + Math.random(), pitchMidi: data[1], startBeat: applySnap(tBeat), velocity: data[2],
+                        msb: bState.msb, lsb: bState.lsb, pc: bState.pc
+                    };
+                }
+            }
+            else if (messageType === 8 || (messageType === 9 && data[2] === 0)) {
+                let keyEl = document.getElementById(`key-${data[1]}`);
+                if (keyEl) keyEl.classList.remove('playing');
+
+                if (isRecording && isPlaying) {
+                    let noteKey = `${channel}-${data[1]}`;
+                    if (activeRecNotes[noteKey]) {
+                        let tLen = trackLengths[channel];
+                        let tBeat = currentAbsoluteBeat % tLen;
+                        let duration = tBeat - activeRecNotes[noteKey].startBeat;
+                        if (duration < 0) duration += tLen;
+                        duration = applySnap(Math.max(0.1, duration));
+                        
+                        let isDuplicate = projectNotes[channel].some(n => n.pitchMidi === activeRecNotes[noteKey].pitchMidi && Math.abs(n.startBeat - activeRecNotes[noteKey].startBeat) < 0.1);
+                        if (!isDuplicate) {
+                            projectNotes[channel].push({ 
+                                id: activeRecNotes[noteKey].id, pitchMidi: activeRecNotes[noteKey].pitchMidi, 
+                                startBeat: activeRecNotes[noteKey].startBeat, durationBeat: duration, velocity: activeRecNotes[noteKey].velocity,
+                                msb: activeRecNotes[noteKey].msb, lsb: activeRecNotes[noteKey].lsb, pc: activeRecNotes[noteKey].pc
+                            });
+                        }
+                        delete activeRecNotes[noteKey];
+                        if (selectedTrackIds.has(channel)) renderNotes();
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
